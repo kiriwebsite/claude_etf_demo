@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ETF 退休投資計算機</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #273549;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-2: #22d3ee;
+    --good: #22c55e;
+    --bad: #ef4444;
+    --warn: #f59e0b;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC",
+      "Microsoft JhengHei", Roboto, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+  @media (max-width: 480px) {
+    .wrap { padding: 20px 12px 40px; }
+    .card { padding: 16px 14px; }
+  }
+  h1 {
+    font-size: 26px;
+    margin: 0 0 6px;
+    letter-spacing: 0.5px;
+  }
+  .subtitle {
+    color: var(--muted);
+    margin: 0 0 22px;
+    font-size: 14px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+  .card h2 {
+    font-size: 24px;
+    margin: 0 0 14px;
+    color: var(--accent);
+    letter-spacing: 0.3px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 480px) {
+    .row { grid-template-columns: 1fr; }
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  input[type="number"] {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="number"]:focus {
+    border-color: var(--accent);
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: -4px;
+  }
+  button {
+    margin-top: 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #0b1220;
+    font-weight: 700;
+    border: none;
+    padding: 12px 18px;
+    font-size: 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+    letter-spacing: 0.5px;
+  }
+  button:hover { filter: brightness(1.05); }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 6px;
+  }
+  @media (max-width: 480px) {
+    .result-grid { grid-template-columns: 1fr; }
+  }
+  .stat {
+    background: var(--panel-2);
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .stat .k { font-size: 12px; color: var(--muted); }
+  .stat .v { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .verdict {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .verdict.good { background: rgba(34, 197, 94, 0.12); color: #86efac; border: 1px solid rgba(34,197,94,0.35); }
+  .verdict.bad { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); }
+  .verdict .big { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  th, td {
+    border-bottom: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  th:first-child, td:first-child { text-align: left; }
+  th {
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--panel-2);
+    position: sticky;
+    top: 0;
+  }
+  .table-wrap {
+    max-height: 360px;
+    overflow: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    scrollbar-color: var(--border) transparent;
+  }
+  .table-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+  .table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .table-wrap::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+  }
+  .table-wrap::-webkit-scrollbar-thumb:hover { background: #475569; }
+  .table-wrap::-webkit-scrollbar-corner { background: transparent; }
+
+  /* RWD: table 轉為卡片式 */
+  @media (max-width: 640px) {
+    .table-wrap {
+      max-height: none;
+      border: none;
+      background: transparent;
+      overflow: visible;
+    }
+    #yearTable thead { display: none; }
+    #yearTable, #yearTable tbody, #yearTable tr, #yearTable td {
+      display: block;
+      width: 100%;
+    }
+    #yearTable tr {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    #yearTable td {
+      border: none;
+      padding: 4px 0;
+      text-align: right;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      white-space: normal;
+    }
+    #yearTable td::before {
+      content: attr(data-label);
+      color: var(--muted);
+      font-size: 12px;
+      text-align: left;
+      flex: 0 0 auto;
+    }
+    #yearTable td:first-child {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+    }
+    #yearTable td:first-child::before {
+      content: "年齡";
+    }
+    #yearTable tr.warn-row td {
+      justify-content: center;
+    }
+    #yearTable tr.warn-row td::before { content: none; }
+  }
+
+  .phase-accum { color: #93c5fd; }
+  .phase-retire { color: #fcd34d; }
+  .small-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ETF 退休投資計算機</h1>
+  <p class="subtitle">輸入基本資料，計算是否能在目標退休年齡退休、每月應投入多少、以及最早可退休年齡。</p>
+
+  <div class="grid">
+    <!-- Inputs -->
+    <div class="card">
+      <h2>輸入資料</h2>
+
+      <div class="row">
+        <div class="field">
+          <label>目前年齡</label>
+          <input type="number" id="currentAge" value="30" min="1" max="100" />
+        </div>
+        <div class="field">
+          <label>預計退休年齡</label>
+          <input type="number" id="retirementAge" value="60" min="1" max="100" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>預計離開人世年齡</label>
+          <input type="number" id="deathAge" value="85" min="1" max="120" />
+        </div>
+        <div class="field">
+          <label>目前 ETF 總資產 (NT$)</label>
+          <input type="number" id="currentAssets" value="500000" min="0" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>每月定期定額 (NT$)</label>
+          <input type="number" id="monthly" value="20000" min="0" />
+        </div>
+        <div class="field">
+          <label>退休後每年花費 (NT$，今日幣值)</label>
+          <input type="number" id="annualExpense" value="600000" min="0" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>年化投資報酬率 (%)</label>
+          <input type="number" id="returnRate" value="7" step="0.1" />
+        </div>
+        <div class="field">
+          <label>通貨膨脹率 (%)</label>
+          <input type="number" id="inflationRate" value="2" step="0.1" />
+        </div>
+      </div>
+
+      <button id="calcBtn">開始計算</button>
+      <p class="small-note">
+        計算假設：累積期每月底投入、退休期每年初領取；報酬率為名目年化、通膨每年複利套用於生活費。
+      </p>
+    </div>
+
+    <!-- Results -->
+    <div class="card">
+      <h2>計算結果</h2>
+      <div id="results">
+        <p class="small-note">請輸入資料後按「開始計算」。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Year by year -->
+  <div class="card" style="margin-top:20px;">
+    <h2>逐年資產變化</h2>
+    <p class="small-note" style="margin-top:-6px;margin-bottom:12px;">
+      此表依您輸入的「每月定期定額」模擬；若投入高於建議金額，離世時會有結餘，反之會提早耗盡。退休期的「領取」為名目金額（已依通膨調整，以維持今日幣值的生活水準）。
+    </p>
+    <div class="table-wrap">
+      <table id="yearTable">
+        <thead>
+          <tr>
+            <th>年齡</th>
+            <th>階段</th>
+            <th>年初資產 (名目)</th>
+            <th>當年投入 / 領取 (名目)</th>
+            <th>年末資產 (名目)</th>
+            <th>年末購買力 (今日幣值)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const fmt = (n) => {
+    if (!isFinite(n)) return "—";
+    const sign = n < 0 ? "-" : "";
+    const abs = Math.abs(Math.round(n));
+    return sign + "NT$ " + abs.toLocaleString();
+  };
+  const fmtPct = (n) => (n * 100).toFixed(2) + "%";
+
+  function readInputs() {
+    const v = (id) => parseFloat(document.getElementById(id).value);
+    return {
+      currentAge: v("currentAge"),
+      retirementAge: v("retirementAge"),
+      deathAge: v("deathAge"),
+      currentAssets: v("currentAssets"),
+      monthly: v("monthly"),
+      annualExpense: v("annualExpense"),
+      r: v("returnRate") / 100,
+      i: v("inflationRate") / 100,
+    };
+  }
+
+  // Future value at retirement given monthly contribution `m`, years of accumulation `years1`
+  function fvAtRetirement(currentAssets, m, years1, r) {
+    const rm = Math.pow(1 + r, 1 / 12) - 1;
+    const n1 = Math.round(years1 * 12);
+    const fvLump = currentAssets * Math.pow(1 + r, years1);
+    let fvStream;
+    if (Math.abs(rm) < 1e-12) {
+      fvStream = m * n1;
+    } else {
+      fvStream = m * (Math.pow(1 + rm, n1) - 1) / rm;
+    }
+    return fvLump + fvStream;
+  }
+
+  // Required capital at retirement: sum of inflated annual expenses discounted at r, withdrawn at start of each retirement year
+  function requiredAtRetirement(annualExpense, years1, retireYears, r, i) {
+    let req = 0;
+    for (let k = 0; k < retireYears; k++) {
+      const expenseThatYear = annualExpense * Math.pow(1 + i, years1 + k);
+      req += expenseThatYear / Math.pow(1 + r, k);
+    }
+    return req;
+  }
+
+  // Solve monthly needed to reach `target` FV given currentAssets, years1, r
+  function monthlyNeeded(target, currentAssets, years1, r) {
+    const rm = Math.pow(1 + r, 1 / 12) - 1;
+    const n1 = Math.round(years1 * 12);
+    const growLump = currentAssets * Math.pow(1 + r, years1);
+    const gap = target - growLump;
+    if (gap <= 0) return 0;
+    const annuityFactor = Math.abs(rm) < 1e-12 ? n1 : (Math.pow(1 + rm, n1) - 1) / rm;
+    return gap / annuityFactor;
+  }
+
+  // Find earliest retirement age where FV >= Required (given monthly plan)
+  function earliestRetirementAge(inp) {
+    for (let age = inp.currentAge; age <= inp.deathAge - 1; age++) {
+      const years1 = age - inp.currentAge;
+      const retireYears = inp.deathAge - age;
+      if (retireYears <= 0) break;
+      const fv = fvAtRetirement(inp.currentAssets, inp.monthly, years1, inp.r);
+      const req = requiredAtRetirement(inp.annualExpense, years1, retireYears, inp.r, inp.i);
+      if (fv >= req) return age;
+    }
+    return null; // cannot reach
+  }
+
+  function buildYearTable(inp, planMonthly) {
+    const tbody = document.querySelector("#yearTable tbody");
+    tbody.innerHTML = "";
+    const rm = Math.pow(1 + inp.r, 1 / 12) - 1;
+    let assets = inp.currentAssets;
+    for (let age = inp.currentAge; age < inp.deathAge; age++) {
+      const yearsFromNow = age - inp.currentAge;
+      const startAssets = assets;
+      let flow = 0;
+      let phase = "";
+      if (age < inp.retirementAge) {
+        // accumulation: monthly contributions with monthly compounding
+        phase = '<span class="phase-accum">累積期</span>';
+        let v = startAssets;
+        for (let mi = 0; mi < 12; mi++) {
+          v = v * (1 + rm) + planMonthly;
+        }
+        assets = v;
+        flow = planMonthly * 12;
+      } else {
+        // retirement: withdraw at start of year, compound rest of year annually
+        phase = '<span class="phase-retire">退休期</span>';
+        const expenseThatYear = inp.annualExpense * Math.pow(1 + inp.i, yearsFromNow);
+        const afterWithdraw = startAssets - expenseThatYear;
+        assets = afterWithdraw * (1 + inp.r);
+        flow = -expenseThatYear;
+      }
+      const realEnd = assets / Math.pow(1 + inp.i, yearsFromNow + 1);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td data-label="年齡">${age}</td>
+        <td data-label="階段">${phase}</td>
+        <td data-label="年初資產 (名目)">${fmt(startAssets)}</td>
+        <td data-label="當年投入 / 領取 (名目)" style="color:${flow >= 0 ? '#86efac' : '#fca5a5'}">${flow >= 0 ? '+' : ''}${fmt(flow)}</td>
+        <td data-label="年末資產 (名目)">${fmt(assets)}</td>
+        <td data-label="年末購買力 (今日幣值)">${fmt(realEnd)}</td>
+      `;
+      tbody.appendChild(tr);
+      if (assets < 0) {
+        // add note row
+        const warn = document.createElement("tr");
+        warn.className = "warn-row";
+        warn.innerHTML = `<td colspan="6" style="color:#fca5a5;text-align:center;">⚠ 資產已耗盡於 ${age} 歲</td>`;
+        tbody.appendChild(warn);
+        break;
+      }
+    }
+  }
+
+  function calculate() {
+    const inp = readInputs();
+    const errors = [];
+    if (inp.retirementAge <= inp.currentAge) errors.push("退休年齡必須大於目前年齡");
+    if (inp.deathAge <= inp.retirementAge) errors.push("離世年齡必須大於退休年齡");
+    if (inp.r <= -1) errors.push("投資報酬率不合理");
+    const resDiv = document.getElementById("results");
+    if (errors.length) {
+      resDiv.innerHTML = `<div class="verdict bad">${errors.join("；")}</div>`;
+      document.querySelector("#yearTable tbody").innerHTML = "";
+      return;
+    }
+
+    const years1 = inp.retirementAge - inp.currentAge;
+    const retireYears = inp.deathAge - inp.retirementAge;
+
+    const fv = fvAtRetirement(inp.currentAssets, inp.monthly, years1, inp.r);
+    const req = requiredAtRetirement(inp.annualExpense, years1, retireYears, inp.r, inp.i);
+    const gap = fv - req;
+    const needMonthly = monthlyNeeded(req, inp.currentAssets, years1, inp.r);
+    const earliest = earliestRetirementAge(inp);
+    const realReturn = (1 + inp.r) / (1 + inp.i) - 1;
+
+    const pass = fv >= req;
+    const verdictHtml = pass
+      ? `<div class="verdict good">
+           <span class="big">✅ 可以在 ${inp.retirementAge} 歲退休</span>
+           退休時預估資產 ${fmt(fv)}，高於所需 ${fmt(req)}，餘裕 ${fmt(gap)}。
+         </div>`
+      : `<div class="verdict bad">
+           <span class="big">❌ 目前計畫無法在 ${inp.retirementAge} 歲退休</span>
+           退休時預估資產 ${fmt(fv)}，低於所需 ${fmt(req)}，缺口 ${fmt(-gap)}。
+         </div>`;
+
+    const earliestHtml = earliest
+      ? `<div class="stat">
+           <div class="k">以目前每月 ${fmt(inp.monthly)} 投入，最早可退休年齡</div>
+           <div class="v">${earliest} 歲</div>
+         </div>`
+      : `<div class="stat">
+           <div class="k">以目前每月 ${fmt(inp.monthly)} 投入</div>
+           <div class="v" style="color:#fca5a5;">無法在離世前退休</div>
+         </div>`;
+
+    resDiv.innerHTML = `
+      ${verdictHtml}
+      <div class="result-grid">
+        <div class="stat">
+          <div class="k">退休時預估資產（${inp.retirementAge} 歲）</div>
+          <div class="v">${fmt(fv)}</div>
+        </div>
+        <div class="stat">
+          <div class="k">退休時所需資產</div>
+          <div class="v">${fmt(req)}</div>
+        </div>
+        <div class="stat">
+          <div class="k">要在 ${inp.retirementAge} 歲退休，每月需投入</div>
+          <div class="v" style="color:${needMonthly <= inp.monthly ? '#86efac' : '#fcd34d'}">${fmt(needMonthly)}</div>
+        </div>
+        ${earliestHtml}
+        <div class="stat">
+          <div class="k">實質報酬率（扣除通膨）</div>
+          <div class="v">${fmtPct(realReturn)}</div>
+        </div>
+        <div class="stat">
+          <div class="k">退休首年生活費（名目）</div>
+          <div class="v">${fmt(inp.annualExpense * Math.pow(1 + inp.i, years1))}</div>
+        </div>
+      </div>
+      <p class="small-note">
+        「每月需投入」是為了在 ${inp.retirementAge} 歲達成退休目標，於累積期內每月定期定額的建議金額；若小於等於目前金額，代表計畫已達標。
+      </p>
+    `;
+
+    buildYearTable(inp, inp.monthly);
+  }
+
+  document.getElementById("calcBtn").addEventListener("click", calculate);
+  // run once with defaults
+  calculate();
+</script>
+</body>
+</html>
