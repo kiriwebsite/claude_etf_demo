@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ETF 退休投資計算機</title>
+<title>退休投資模擬計算機</title>
 <style>
   :root {
     --bg: #0f172a;
@@ -29,7 +29,7 @@
     line-height: 1.55;
   }
   .wrap {
-    max-width: 1100px;
+    max-width: 1440px;
     margin: 0 auto;
     padding: 28px 20px 60px;
   }
@@ -73,15 +73,18 @@
     gap: 14px;
     margin-bottom: 12px;
   }
+  .row.single { grid-template-columns: 1fr; }
   @media (max-width: 480px) {
     .row { grid-template-columns: 1fr; }
   }
-  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   label {
     font-size: 13px;
     color: var(--muted);
   }
-  input[type="number"] {
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    min-width: 0;
     background: var(--panel-2);
     border: 1px solid var(--border);
     color: var(--text);
@@ -91,7 +94,7 @@
     outline: none;
     transition: border-color 0.15s;
   }
-  input[type="number"]:focus {
+  input[type="number"]:focus, input[type="text"]:focus {
     border-color: var(--accent);
   }
   .hint {
@@ -99,26 +102,156 @@
     color: var(--muted);
     margin-top: -4px;
   }
-  button {
-    margin-top: 8px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    color: #0b1220;
-    font-weight: 700;
+  .inline { display: flex; align-items: center; gap: 12px; }
+  .inline input { flex: 1; }
+  .equiv { white-space: nowrap; color: var(--accent); font-size: 14px; font-weight: 600; }
+  .chip {
+    display: inline-block;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 0 9px;
+    font-size: 12px;
+    line-height: 1.6;
+    cursor: pointer;
+    margin: 0 2px;
+  }
+  .chip:hover { border-color: var(--accent); }
+
+  /* 資產項目列表 */
+  .holdings-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 6px 0 8px;
+  }
+  .holding-head, .holding {
+    display: grid;
+    grid-template-columns: 1.4fr 0.9fr 1.2fr 1.2fr 34px;
+    gap: 8px;
+    align-items: center;
+  }
+  .holding-head {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 0 2px;
+    margin-bottom: 4px;
+  }
+  .holding { margin-bottom: 8px; }
+  .holding .field label { display: none; }
+  /* 進階欄位（賣出成本與稅）：預設隱藏 */
+  .adv { display: none; }
+  .show-adv .holding .adv { display: flex; }
+  .show-adv .holding-head .adv { display: block; }
+  .show-adv .holding-head, .show-adv .holding {
+    grid-template-columns: 1.3fr 0.8fr 1.1fr 1.1fr 0.9fr 0.9fr 34px;
+  }
+  .toggle {
+    font-size: 12px;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .toggle input { accent-color: var(--accent); margin: 0; }
+  .holdings-title.split { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .holding input { padding: 8px 10px; font-size: 14px; }
+  .btn-del {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    height: 36px;
+    padding: 0;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .btn-del:hover { color: #fca5a5; border-color: rgba(239, 68, 68, 0.5); }
+
+  /* 其他收入列表 */
+  select {
+    width: 100%;
+    min-width: 0;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    outline: none;
+  }
+  select:focus { border-color: var(--accent); }
+  .income-head, .income {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 0.9fr 0.6fr 0.6fr 44px 34px;
+    gap: 6px;
+    align-items: center;
+  }
+  .income-head {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 0 2px;
+    margin-bottom: 4px;
+  }
+  .income { margin-bottom: 8px; }
+  .income .field label { display: none; }
+  .income input, .income select { padding: 8px 8px; font-size: 13px; }
+  .income .check { align-items: center; }
+  .income input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+  .income input:disabled { opacity: 0.35; }
+
+  @media (max-width: 640px) {
+    .holding-head, .income-head { display: none; }
+    .holding, .income {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .holding { grid-template-columns: 1fr 1fr; }
+    .income { grid-template-columns: 1fr 1fr 1fr; }
+    .holding .field label, .income .field label { display: block; }
+    .income .check { flex-direction: row; gap: 8px; align-self: end; height: 38px; }
+    .btn-del { grid-column: 1 / -1; }
+  }
+
+  .btn {
     border: none;
-    padding: 12px 18px;
-    font-size: 15px;
     border-radius: 10px;
     cursor: pointer;
     width: 100%;
     letter-spacing: 0.5px;
   }
-  button:hover { filter: brightness(1.05); }
+  .btn-primary {
+    margin-top: 12px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #0b1220;
+    font-weight: 700;
+    padding: 12px 18px;
+    font-size: 15px;
+  }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-ghost {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--accent);
+    font-weight: 600;
+    padding: 9px;
+    font-size: 14px;
+  }
+  .btn-ghost:hover { border-color: var(--accent); }
 
   .result-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 14px;
-    margin-top: 6px;
+    margin-top: 14px;
   }
   @media (max-width: 480px) {
     .result-grid { grid-template-columns: 1fr; }
@@ -131,17 +264,31 @@
     min-width: 0;
     overflow-wrap: anywhere;
   }
-  .stat .k { font-size: 12px; color: var(--muted); }
-  .stat .v { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .stat .k { font-size: 13px; color: var(--muted); }
+  .stat .v { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .stat .sub { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
   .verdict {
-    margin-top: 14px;
-    padding: 14px 16px;
+    padding: 16px 18px;
     border-radius: 10px;
-    font-weight: 600;
   }
   .verdict.good { background: rgba(34, 197, 94, 0.12); color: #86efac; border: 1px solid rgba(34,197,94,0.35); }
   .verdict.bad { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); }
-  .verdict .big { font-size: 20px; display: block; margin-bottom: 4px; }
+  .verdict .big { font-size: 22px; font-weight: 700; display: block; margin-bottom: 6px; }
+  .verdict .line { font-size: 14px; line-height: 1.6; }
+
+  details {
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  details summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 13px;
+    user-select: none;
+  }
+  details p { margin: 6px 0 0; }
 
   table {
     width: 100%;
@@ -245,8 +392,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>ETF 退休投資計算機</h1>
-  <p class="subtitle">輸入基本資料，計算是否能在目標退休年齡退休、每月應投入多少、以及最早可退休年齡。</p>
+  <h1>退休投資模擬計算機</h1>
+  <p class="subtitle">填入你的年齡、退休後想怎麼花、手上有哪些資產，就能知道：幾歲能退休、每個月該存多少。</p>
 
   <div class="grid">
     <!-- Inputs -->
@@ -259,48 +406,67 @@
           <input type="number" id="currentAge" value="30" min="1" max="100" />
         </div>
         <div class="field">
-          <label>預計退休年齡</label>
+          <label>想幾歲退休</label>
           <input type="number" id="retirementAge" value="60" min="1" max="100" />
         </div>
       </div>
 
       <div class="row">
         <div class="field">
-          <label>預計離開人世年齡</label>
+          <label>預計活到幾歲</label>
           <input type="number" id="deathAge" value="85" min="1" max="120" />
+          <div class="hint">
+            平均壽命 <button type="button" class="chip" data-age="78" title="內政部 2025 年統計：男 77.93 歲，點一下套用">男 78 歲</button><button type="button" class="chip" data-age="85" title="內政部 2025 年統計：女 84.75 歲，點一下套用">女 85 歲</button>，建議多抓幾年。
+          </div>
         </div>
         <div class="field">
-          <label>目前 ETF 總資產 (NT$)</label>
-          <input type="number" id="currentAssets" value="500000" min="0" />
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="field">
-          <label>每月定期定額 (NT$)</label>
-          <input type="number" id="monthly" value="20000" min="0" />
-        </div>
-        <div class="field">
-          <label>退休後每年花費 (NT$，今日幣值)</label>
-          <input type="number" id="annualExpense" value="600000" min="0" />
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="field">
-          <label>年化投資報酬率 (%)</label>
-          <input type="number" id="returnRate" value="7" step="0.1" />
-        </div>
-        <div class="field">
-          <label>通貨膨脹率 (%)</label>
+          <label>通膨率 (%)</label>
           <input type="number" id="inflationRate" value="2" step="0.1" />
+          <div class="hint">物價每年漲多少，台灣長期大約 2%</div>
         </div>
       </div>
 
-      <button id="calcBtn">開始計算</button>
-      <p class="small-note">
-        計算假設：累積期每月底投入、退休期每年初領取；報酬率為名目年化、通膨每年複利套用於生活費。
-      </p>
+      <div class="row single">
+        <div class="field">
+          <label>退休後每月想花多少 (NT$)</label>
+          <div class="inline">
+            <input type="number" id="monthlyExpense" value="50000" min="0" />
+            <span class="equiv" id="annualHint"></span>
+          </div>
+          <div class="hint">用現在的物價想就好，通膨會自動幫你算。</div>
+        </div>
+      </div>
+
+      <div class="holdings-title split">
+        <span>你的資產（可以加好幾筆：定存、ETF、投資型保單…）</span>
+        <label class="toggle"><input type="checkbox" id="advToggle" /> 賣出成本與稅</label>
+      </div>
+      <div class="holding-head">
+        <span>名稱</span>
+        <span>預期年報酬 (%)</span>
+        <span>現在有多少 (NT$)</span>
+        <span>每月再存 (NT$)</span>
+        <span class="adv">賣出成本 (%)</span>
+        <span class="adv">獲利稅率 (%)</span>
+        <span></span>
+      </div>
+      <div id="holdings"></div>
+      <button type="button" class="btn btn-ghost" id="addHolding">＋ 再加一筆資產</button>
+
+      <div class="holdings-title" style="margin-top:16px;">退休後的其他收入（勞保年金、勞退、年金險、租金…，沒有可以刪掉）</div>
+      <div class="income-head">
+        <span>名稱</span>
+        <span>金額 (NT$)</span>
+        <span>怎麼領</span>
+        <span>從幾歲</span>
+        <span>到幾歲</span>
+        <span>隨通膨</span>
+        <span></span>
+      </div>
+      <div id="incomes"></div>
+      <button type="button" class="btn btn-ghost" id="addIncome">＋ 再加一筆收入</button>
+
+      <button type="button" class="btn btn-primary" id="calcBtn">開始計算</button>
     </div>
 
     <!-- Results -->
@@ -314,22 +480,13 @@
 
   <!-- Year by year -->
   <div class="card" style="margin-top:20px;">
-    <h2>逐年資產變化</h2>
+    <h2>每一年的錢會怎麼變</h2>
     <p class="small-note" style="margin-top:-6px;margin-bottom:12px;">
-      此表依您輸入的「每月定期定額」模擬；若投入高於建議金額，離世時會有結餘，反之會提早耗盡。退休期的「領取」為名目金額（已依通膨調整，以維持今日幣值的生活水準）。
+      照你目前的存法逐年模擬。「存入／領出」是進出投資的淨額：退休後的生活費先用其他收入付，不夠的才從資產領。「換算成今天的物價」是把未來的金額扣掉通膨，方便用現在的感覺理解。
     </p>
     <div class="table-wrap">
       <table id="yearTable">
-        <thead>
-          <tr>
-            <th>年齡</th>
-            <th>階段</th>
-            <th>年初資產 (名目)</th>
-            <th>當年投入 / 領取 (名目)</th>
-            <th>年末資產 (名目)</th>
-            <th>年末購買力 (今日幣值)</th>
-          </tr>
-        </thead>
+        <thead></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -337,204 +494,473 @@
 </div>
 
 <script>
-  const fmt = (n) => {
+  // 金額顯示：一萬以上用「萬」、一億以上用「億」，讀起來比一長串數字輕鬆
+  const wanText = (n) => {
     if (!isFinite(n)) return "—";
     const sign = n < 0 ? "-" : "";
-    const abs = Math.abs(Math.round(n));
-    return sign + "NT$ " + abs.toLocaleString();
+    const abs = Math.abs(n);
+    if (abs < 1e4) return sign + Math.round(abs).toLocaleString();
+    if (abs < 1e8) return sign + (abs / 1e4).toLocaleString("zh-Hant-TW", { maximumFractionDigits: abs < 1e6 ? 1 : 0 }) + " 萬";
+    return sign + (abs / 1e8).toLocaleString("zh-Hant-TW", { maximumFractionDigits: 2 }) + " 億";
   };
-  const fmtPct = (n) => (n * 100).toFixed(2) + "%";
+  // 滑鼠移上去可看精確金額
+  const wan = (n) => (isFinite(n) ? `<span title="NT$ ${Math.round(n).toLocaleString()}">${wanText(n)}</span>` : "—");
+  // 每月金額用精確數字
+  const yuan = (n) => (isFinite(n) ? Math.round(n).toLocaleString() + " 元" : "—");
+  const pct1 = (n) => (n * 100).toFixed(1) + "%";
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  function readInputs() {
-    const v = (id) => parseFloat(document.getElementById(id).value);
-    return {
-      currentAge: v("currentAge"),
-      retirementAge: v("retirementAge"),
-      deathAge: v("deathAge"),
-      currentAssets: v("currentAssets"),
-      monthly: v("monthly"),
-      annualExpense: v("annualExpense"),
-      r: v("returnRate") / 100,
-      i: v("inflationRate") / 100,
-    };
-  }
+  // ===== 模型開始（純函式，不碰 DOM）=====
+  // p = { currentAge, retirementAge, deathAge, monthlyExpense, i, holdings, incomes, baseAge? }
+  //   holdings: [{ name, r, amount, monthly, sellCost, gainTax, cost? }]   r、i、sellCost、gainTax 為小數（7% → 0.07）
+  //             sellCost=賣出時的手續費＋交易稅比例；gainTax=賣出時對獲利課的稅率；cost=成本（預設＝amount，即既有部位視為成本）
+  //   incomes:  [{ name, amount, freq, fromAge, toAge, indexed }]   freq=monthly|yearly|once；toAge=null 為終身；indexed=隨通膨
+  //   baseAge：通膨換算的基準年齡，預設 currentAge（求解時 currentAge 會移到退休年齡，通膨仍從原始年齡起算）
+  const sum = (arr) => arr.reduce((s, x) => s + x, 0);
 
-  // Future value at retirement given monthly contribution `m`, years of accumulation `years1`
-  function fvAtRetirement(currentAssets, m, years1, r) {
-    const rm = Math.pow(1 + r, 1 / 12) - 1;
-    const n1 = Math.round(years1 * 12);
-    const fvLump = currentAssets * Math.pow(1 + r, years1);
-    let fvStream;
-    if (Math.abs(rm) < 1e-12) {
-      fvStream = m * n1;
-    } else {
-      fvStream = m * (Math.pow(1 + rm, n1) - 1) / rm;
-    }
-    return fvLump + fvStream;
-  }
-
-  // Required capital at retirement: sum of inflated annual expenses discounted at r, withdrawn at start of each retirement year
-  function requiredAtRetirement(annualExpense, years1, retireYears, r, i) {
-    let req = 0;
-    for (let k = 0; k < retireYears; k++) {
-      const expenseThatYear = annualExpense * Math.pow(1 + i, years1 + k);
-      req += expenseThatYear / Math.pow(1 + r, k);
-    }
-    return req;
-  }
-
-  // Solve monthly needed to reach `target` FV given currentAssets, years1, r
-  function monthlyNeeded(target, currentAssets, years1, r) {
-    const rm = Math.pow(1 + r, 1 / 12) - 1;
-    const n1 = Math.round(years1 * 12);
-    const growLump = currentAssets * Math.pow(1 + r, years1);
-    const gap = target - growLump;
-    if (gap <= 0) return 0;
-    const annuityFactor = Math.abs(rm) < 1e-12 ? n1 : (Math.pow(1 + rm, n1) - 1) / rm;
-    return gap / annuityFactor;
-  }
-
-  // Find earliest retirement age where FV >= Required (given monthly plan)
-  function earliestRetirementAge(inp) {
-    for (let age = inp.currentAge; age <= inp.deathAge - 1; age++) {
-      const years1 = age - inp.currentAge;
-      const retireYears = inp.deathAge - age;
-      if (retireYears <= 0) break;
-      const fv = fvAtRetirement(inp.currentAssets, inp.monthly, years1, inp.r);
-      const req = requiredAtRetirement(inp.annualExpense, years1, retireYears, inp.r, inp.i);
-      if (fv >= req) return age;
-    }
-    return null; // cannot reach
-  }
-
-  function buildYearTable(inp, planMonthly) {
-    const tbody = document.querySelector("#yearTable tbody");
-    tbody.innerHTML = "";
-    const rm = Math.pow(1 + inp.r, 1 / 12) - 1;
-    let assets = inp.currentAssets;
-    for (let age = inp.currentAge; age < inp.deathAge; age++) {
-      const yearsFromNow = age - inp.currentAge;
-      const startAssets = assets;
-      let flow = 0;
-      let phase = "";
-      if (age < inp.retirementAge) {
-        // accumulation: monthly contributions with monthly compounding
-        phase = '<span class="phase-accum">累積期</span>';
-        let v = startAssets;
-        for (let mi = 0; mi < 12; mi++) {
-          v = v * (1 + rm) + planMonthly;
-        }
-        assets = v;
-        flow = planMonthly * 12;
+  // 某一歲的其他收入合計（名目）
+  function incomeAt(p, age) {
+    const infl = Math.pow(1 + p.i, age - (p.baseAge ?? p.currentAge));
+    let total = 0;
+    for (const inc of p.incomes || []) {
+      const adj = inc.indexed ? infl : 1;
+      if (inc.freq === "once") {
+        if (inc.fromAge >= age && inc.fromAge < age + 1) total += inc.amount * adj;
       } else {
-        // retirement: withdraw at start of year, compound rest of year annually
-        phase = '<span class="phase-retire">退休期</span>';
-        const expenseThatYear = inp.annualExpense * Math.pow(1 + inp.i, yearsFromNow);
-        const afterWithdraw = startAssets - expenseThatYear;
-        assets = afterWithdraw * (1 + inp.r);
-        flow = -expenseThatYear;
+        const to = inc.toAge ?? p.deathAge - 1;
+        const perYear = inc.freq === "yearly" ? inc.amount : inc.amount * 12;
+        if (age >= inc.fromAge && age <= to) total += perYear * adj;
       }
-      const realEnd = assets / Math.pow(1 + inp.i, yearsFromNow + 1);
+    }
+    return total;
+  }
+
+  // 唯一的財務模型：回傳逐年路徑、退休時各項目餘額、是否撐到離世
+  function simulate(p) {
+    const hs = p.holdings;
+    const baseAge = p.baseAge ?? p.currentAge;
+    const rms = hs.map((h) => Math.pow(1 + h.r, 1 / 12) - 1);
+    const sc = hs.map((h) => h.sellCost || 0);
+    const gt = hs.map((h) => h.gainTax || 0);
+    const cw = contributionWeights(hs);
+    let bal = hs.map((h) => h.amount);
+    let cost = hs.map((h) => h.cost ?? h.amount);
+    let atRetirement = null;
+    let costAtRetirement = null;
+    const path = [];
+    for (let age = p.currentAge; age < p.deathAge; age++) {
+      const t = age - baseAge;
+      const start = sum(bal);
+      const retired = age >= p.retirementAge;
+      if (retired && atRetirement === null) { atRetirement = bal.slice(); costAtRetirement = cost.slice(); }
+      const income = incomeAt(p, age);
+      let expense = 0;
+      let flow;
+      let costs = 0; // 這一年付出的手續費＋稅
+      if (!retired) {
+        // 存錢期：其他收入年初依投入比例存入；各項目每月底複利並投入（投入都算進成本）
+        bal = bal.map((b, k) => {
+          const add = income * cw[k];
+          cost[k] += add + hs[k].monthly * 12;
+          b += add;
+          for (let m = 0; m < 12; m++) b = b * (1 + rms[k]) + hs[k].monthly;
+          return b;
+        });
+        flow = sum(hs.map((h) => h.monthly)) * 12 + income;
+      } else {
+        // 退休期：年初先用其他收入付生活費
+        expense = p.monthlyExpense * 12 * Math.pow(1 + p.i, t);
+        const net = income - expense;
+        if (net >= 0) {
+          // 多的依餘額比例存回（沒餘額就依投入比例）
+          bal = bal.map((b, k) => {
+            const add = net * (start > 0 ? b / start : cw[k]);
+            cost[k] += add;
+            return (b + add) * (1 + hs[k].r);
+          });
+        } else if (start > 0) {
+          // 不夠的依餘額比例賣出；賣出總額要多到扣掉手續費與獲利稅後剛好補上缺口
+          const gain = bal.map((b, k) => (b > 0 ? Math.max(0, 1 - cost[k] / b) : 0)); // 各項目的獲利佔比
+          const netFactor = sum(bal.map((b, k) => (b / start) * (1 - sc[k] - gt[k] * gain[k])));
+          const gross = -net / netFactor;
+          bal = bal.map((b, k) => {
+            const sell = gross * (b / start);
+            costs += sell * (sc[k] + gt[k] * gain[k]);
+            if (b > 0) cost[k] -= sell * (cost[k] / b);
+            return (b - sell) * (1 + hs[k].r);
+          });
+        } else {
+          // 已經沒錢：缺口記在第一筆 → 變負數 → 判定耗盡
+          bal = bal.map((b, k) => (b + (k === 0 ? net : 0)) * (1 + hs[k].r));
+        }
+        flow = net;
+      }
+      const end = sum(bal);
+      path.push({ age, retired, start, income, expense, flow, costs, end, real: end / Math.pow(1 + p.i, t + 1), bal: bal.slice() });
+      if (end < 0) return { path, ok: false, depletedAt: age, atRetirement, costAtRetirement, finalAssets: end };
+    }
+    if (atRetirement === null) { atRetirement = bal.slice(); costAtRetirement = cost.slice(); }
+    return { path, ok: true, depletedAt: null, atRetirement, costAtRetirement, finalAssets: sum(bal) };
+  }
+
+  // 通用求解：在 [lo, hi] 內用二分法找「剛好撐到離世」的參數值
+  // apply(v) 回傳套用該值後的參數；largerIsSafer 表示參數越大越安全
+  function solveFor(apply, lo, hi, largerIsSafer = true) {
+    const ok = (v) => simulate(apply(v)).ok;
+    let [bad, good] = largerIsSafer ? [lo, hi] : [hi, lo];
+    if (ok(bad)) return bad;      // 整段都可行
+    if (!ok(good)) return null;   // 整段都不可行
+    for (let k = 0; k < 60; k++) {
+      const mid = (bad + good) / 2;
+      if (ok(mid)) good = mid; else bad = mid;
+    }
+    return good;
+  }
+
+  // 「每月需投入」的分配權重：依目前各項目每月投入比例；全為 0 則依目前金額比例；再全為 0 則平均
+  function contributionWeights(hs) {
+    let base = hs.map((h) => h.monthly);
+    if (sum(base) <= 0) base = hs.map((h) => h.amount);
+    if (sum(base) <= 0) base = hs.map(() => 1);
+    const s = sum(base);
+    return base.map((x) => x / s);
+  }
+
+  // 要在目標年齡退休，每月合計需投入多少（依權重分配到各項目）
+  function monthlyNeeded(p) {
+    const w = contributionWeights(p.holdings);
+    const apply = (M) => ({ ...p, holdings: p.holdings.map((h, k) => ({ ...h, monthly: M * w[k] })) });
+    const total = solveFor(apply, 0, 1e9);
+    return total === null ? null : { total, perHolding: w.map((x) => x * total) };
+  }
+
+  // 退休時所需資產：維持退休時各項目的餘額比例與獲利佔比、不再投入，要多少總額才能撐到離世（其他收入已計入）
+  function requiredAtRetirement(p, sim) {
+    const baseAge = p.baseAge ?? p.currentAge;
+    const years1 = p.retirementAge - baseAge;
+    const retireYears = p.deathAge - p.retirementAge;
+    const balAtRetire = sim.atRetirement;
+    let w = balAtRetire;
+    if (sum(w) <= 0) w = p.holdings.map(() => 1);
+    const s = sum(w);
+    const costRatio = balAtRetire.map((b, k) => (b > 0 ? Math.min(1, sim.costAtRetirement[k] / b) : 1));
+    const base = { ...p, currentAge: p.retirementAge, baseAge };
+    const apply = (K) => ({
+      ...base,
+      holdings: p.holdings.map((h, k) => {
+        const amount = (K * w[k]) / s;
+        return { ...h, monthly: 0, amount, cost: amount * costRatio[k] };
+      }),
+    });
+    // 上界：退休期名目生活費總和的 100 倍（報酬率為負時才可能需要接近這麼多）
+    let nominalTotal = 0;
+    for (let k = 0; k < retireYears; k++) nominalTotal += p.monthlyExpense * 12 * Math.pow(1 + p.i, years1 + k);
+    return solveFor(apply, 0, Math.max(1, nominalTotal) * 100);
+  }
+
+  // 以目前計畫，最早幾歲退休能撐到離世
+  function earliestRetirementAge(p) {
+    for (let age = p.currentAge; age < p.deathAge; age++) {
+      if (simulate({ ...p, retirementAge: age }).ok) return age;
+    }
+    return null;
+  }
+
+  // 加權平均報酬率（依退休時各項目餘額；餘額全為 0 時取簡單平均）
+  function blendedReturn(hs, bal) {
+    const s = sum(bal);
+    if (s <= 0) return sum(hs.map((h) => h.r)) / hs.length;
+    return sum(hs.map((h, k) => h.r * bal[k])) / s;
+  }
+  // ===== 模型結束 =====
+
+  // ----- 資產項目 UI -----
+  const holdingsEl = document.getElementById("holdings");
+  function addHoldingRow(h) {
+    const row = document.createElement("div");
+    row.className = "holding";
+    row.innerHTML = `
+      <div class="field"><label>名稱</label><input type="text" class="h-name" placeholder="例：定存、0050" value="${esc(h.name)}" /></div>
+      <div class="field"><label>預期年報酬 (%)</label><input type="number" class="h-rate" step="0.1" value="${h.rate}" /></div>
+      <div class="field"><label>現在有多少 (NT$)</label><input type="number" class="h-amount" min="0" value="${h.amount}" /></div>
+      <div class="field"><label>每月再存 (NT$)</label><input type="number" class="h-monthly" min="0" value="${h.monthly}" /></div>
+      <div class="field adv"><label>賣出成本 (%)</label><input type="number" class="h-sell" min="0" step="0.01" value="${h.sellCost ?? 0}" title="賣出時的手續費＋交易稅，占賣出金額的比例。台股 ETF 約 0.15%（證交稅 0.1%＋手續費）" /></div>
+      <div class="field adv"><label>獲利稅率 (%)</label><input type="number" class="h-tax" min="0" step="1" value="${h.gainTax ?? 0}" title="賣出時對「獲利部分」課的稅率。台股 ETF 填 0；美股 ETF 多數人也是 0，年度海外所得超過 100 萬且基本所得額超過 750 萬才填 20" /></div>
+      <button type="button" class="btn-del" title="刪除這筆">✕</button>
+    `;
+    row.querySelector(".btn-del").addEventListener("click", () => row.remove());
+    holdingsEl.appendChild(row);
+  }
+  document.getElementById("addHolding").addEventListener("click", () =>
+    addHoldingRow({ name: "", rate: 5, amount: 0, monthly: 0, sellCost: 0, gainTax: 0 })
+  );
+
+  // ----- 其他收入 UI -----
+  const incomesEl = document.getElementById("incomes");
+  function addIncomeRow(inc) {
+    const row = document.createElement("div");
+    row.className = "income";
+    row.innerHTML = `
+      <div class="field"><label>名稱</label><input type="text" class="inc-name" placeholder="例：勞保年金" value="${esc(inc.name)}" /></div>
+      <div class="field"><label>金額 (NT$)</label><input type="number" class="inc-amount" min="0" value="${inc.amount}" /></div>
+      <div class="field"><label>怎麼領</label>
+        <select class="inc-type">
+          ${[["monthly", "每月領"], ["yearly", "每年領"], ["once", "一次領"]]
+            .map(([v, label]) => `<option value="${v}"${inc.freq === v ? " selected" : ""}>${label}</option>`).join("")}
+        </select></div>
+      <div class="field"><label>從幾歲</label><input type="number" class="inc-from" min="0" max="120" value="${inc.fromAge}" /></div>
+      <div class="field"><label>到幾歲</label><input type="number" class="inc-to" min="0" max="120" placeholder="終身" value="${inc.toAge ?? ""}" /></div>
+      <div class="field check"><label>隨通膨</label><input type="checkbox" class="inc-indexed" title="勾選＝金額用現在的物價填，之後會跟著通膨調高（勞保年金適用）；不勾＝固定金額（多數保單適用）"${inc.indexed ? " checked" : ""} /></div>
+      <button type="button" class="btn-del" title="刪除這筆">✕</button>
+    `;
+    const typeEl = row.querySelector(".inc-type");
+    const toEl = row.querySelector(".inc-to");
+    const syncType = () => { toEl.disabled = typeEl.value === "once"; };
+    typeEl.addEventListener("change", syncType);
+    syncType();
+    row.querySelector(".btn-del").addEventListener("click", () => row.remove());
+    incomesEl.appendChild(row);
+  }
+  document.getElementById("addIncome").addEventListener("click", () =>
+    addIncomeRow({ name: "", amount: 0, freq: "monthly", fromAge: 65, toAge: null, indexed: false })
+  );
+
+  const advToggle = document.getElementById("advToggle");
+  advToggle.addEventListener("change", () => document.body.classList.toggle("show-adv", advToggle.checked));
+
+  const monthlyExpenseEl = document.getElementById("monthlyExpense");
+  function updateAnnualHint() {
+    const m = parseFloat(monthlyExpenseEl.value);
+    document.getElementById("annualHint").textContent = isFinite(m) ? `＝ 一年 ${wanText(m * 12)}` : "";
+  }
+  monthlyExpenseEl.addEventListener("input", updateAnnualHint);
+
+  // ----- 讀取輸入 -----
+  function readInputs() {
+    const errors = [];
+    const num = (id, label) => {
+      const v = parseFloat(document.getElementById(id).value);
+      if (!isFinite(v)) errors.push(`請填「${label}」`);
+      return v;
+    };
+    const inp = {
+      currentAge: num("currentAge", "目前年齡"),
+      retirementAge: num("retirementAge", "想幾歲退休"),
+      deathAge: num("deathAge", "預計活到幾歲"),
+      monthlyExpense: num("monthlyExpense", "退休後每月想花多少"),
+      i: num("inflationRate", "通膨率") / 100,
+      holdings: [],
+      incomes: [],
+    };
+    document.querySelectorAll("#holdings .holding").forEach((row, idx) => {
+      const name = row.querySelector(".h-name").value.trim() || `資產 ${idx + 1}`;
+      const rate = parseFloat(row.querySelector(".h-rate").value);
+      const amount = parseFloat(row.querySelector(".h-amount").value);
+      const monthly = parseFloat(row.querySelector(".h-monthly").value);
+      const sellCost = parseFloat(row.querySelector(".h-sell").value) || 0; // 留空視為 0
+      const gainTax = parseFloat(row.querySelector(".h-tax").value) || 0;
+      if (!isFinite(rate)) errors.push(`請填「${name}」的預期年報酬`);
+      else if (rate / 100 <= -1) errors.push(`「${name}」的報酬率不合理`);
+      if (!isFinite(amount)) errors.push(`請填「${name}」現在有多少`);
+      if (!isFinite(monthly)) errors.push(`請填「${name}」每月再存多少（沒有就填 0）`);
+      if (sellCost < 0 || gainTax < 0 || (sellCost + gainTax) / 100 >= 1) errors.push(`「${name}」的賣出成本或獲利稅率不合理`);
+      inp.holdings.push({ name, r: rate / 100, amount, monthly, sellCost: sellCost / 100, gainTax: gainTax / 100 });
+    });
+    if (inp.holdings.length === 0) errors.push("至少要有一筆資產");
+    document.querySelectorAll("#incomes .income").forEach((row, idx) => {
+      const name = row.querySelector(".inc-name").value.trim() || `收入 ${idx + 1}`;
+      const amount = parseFloat(row.querySelector(".inc-amount").value);
+      const freq = row.querySelector(".inc-type").value;
+      const fromAge = parseFloat(row.querySelector(".inc-from").value);
+      const toRaw = row.querySelector(".inc-to").value.trim();
+      const toAge = freq === "once" || toRaw === "" ? null : parseFloat(toRaw);
+      const indexed = row.querySelector(".inc-indexed").checked;
+      if (!isFinite(amount)) errors.push(`請填「${name}」的金額`);
+      if (!isFinite(fromAge)) errors.push(`請填「${name}」從幾歲開始領`);
+      if (toAge !== null && !isFinite(toAge)) errors.push(`「${name}」的到幾歲格式錯誤`);
+      else if (toAge !== null && isFinite(fromAge) && toAge < fromAge) errors.push(`「${name}」的到幾歲不能小於從幾歲`);
+      inp.incomes.push({ name, amount, freq, fromAge: Math.round(fromAge), toAge: toAge === null ? null : Math.round(toAge), indexed });
+    });
+    if (errors.length === 0) {
+      if (inp.retirementAge <= inp.currentAge) errors.push("退休年齡要比目前年齡大");
+      if (inp.deathAge <= inp.retirementAge) errors.push("預計活到的年齡要比退休年齡大");
+    }
+    return { inp, errors };
+  }
+
+  // ----- 逐年表 -----
+  function buildYearTable(inp, sim) {
+    const thead = document.querySelector("#yearTable thead");
+    const tbody = document.querySelector("#yearTable tbody");
+    const names = inp.holdings.map((h) => esc(h.name));
+    const hasIncome = inp.incomes.length > 0;
+    const hasCosts = inp.holdings.some((h) => h.sellCost > 0 || h.gainTax > 0);
+    thead.innerHTML = `
+      <tr>
+        <th>年齡</th>
+        <th>階段</th>
+        <th>年初有多少</th>
+        <th>這一年存入 / 領出</th>
+        ${hasIncome ? "<th>其他收入</th>" : ""}
+        ${hasCosts ? "<th>手續費＋稅</th>" : ""}
+        <th>年末有多少</th>
+        <th>換算成今天的物價</th>
+        ${names.map((n) => `<th>${n}</th>`).join("")}
+      </tr>
+    `;
+    tbody.innerHTML = "";
+    for (const row of sim.path) {
+      const phase = row.retired
+        ? '<span class="phase-retire">退休期</span>'
+        : '<span class="phase-accum">存錢期</span>';
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td data-label="年齡">${age}</td>
+        <td data-label="年齡">${row.age}</td>
         <td data-label="階段">${phase}</td>
-        <td data-label="年初資產 (名目)">${fmt(startAssets)}</td>
-        <td data-label="當年投入 / 領取 (名目)" style="color:${flow >= 0 ? '#86efac' : '#fca5a5'}">${flow >= 0 ? '+' : ''}${fmt(flow)}</td>
-        <td data-label="年末資產 (名目)">${fmt(assets)}</td>
-        <td data-label="年末購買力 (今日幣值)">${fmt(realEnd)}</td>
+        <td data-label="年初有多少">${wan(row.start)}</td>
+        <td data-label="這一年存入 / 領出" style="color:${row.flow >= 0 ? '#86efac' : '#fca5a5'}">${row.flow >= 0 ? '+' : ''}${wan(row.flow)}</td>
+        ${hasIncome ? `<td data-label="其他收入">${row.income > 0 ? wan(row.income) : "—"}</td>` : ""}
+        ${hasCosts ? `<td data-label="手續費＋稅" style="color:#fca5a5">${row.costs > 0 ? "-" + wan(row.costs) : "—"}</td>` : ""}
+        <td data-label="年末有多少">${wan(row.end)}</td>
+        <td data-label="換算成今天的物價">${wan(row.real)}</td>
+        ${row.bal.map((b, k) => `<td data-label="${names[k]}">${wan(b)}</td>`).join("")}
       `;
       tbody.appendChild(tr);
-      if (assets < 0) {
-        // add note row
-        const warn = document.createElement("tr");
-        warn.className = "warn-row";
-        warn.innerHTML = `<td colspan="6" style="color:#fca5a5;text-align:center;">⚠ 資產已耗盡於 ${age} 歲</td>`;
-        tbody.appendChild(warn);
-        break;
-      }
+    }
+    if (sim.depletedAt !== null) {
+      const warn = document.createElement("tr");
+      warn.className = "warn-row";
+      warn.innerHTML = `<td colspan="${6 + (hasIncome ? 1 : 0) + (hasCosts ? 1 : 0) + names.length}" style="color:#fca5a5;text-align:center;">⚠ 錢在 ${sim.depletedAt} 歲用完了</td>`;
+      tbody.appendChild(warn);
     }
   }
 
+  // ----- 主流程 -----
   function calculate() {
-    const inp = readInputs();
-    const errors = [];
-    if (inp.retirementAge <= inp.currentAge) errors.push("退休年齡必須大於目前年齡");
-    if (inp.deathAge <= inp.retirementAge) errors.push("離世年齡必須大於退休年齡");
-    if (inp.r <= -1) errors.push("投資報酬率不合理");
+    const { inp, errors } = readInputs();
     const resDiv = document.getElementById("results");
     if (errors.length) {
-      resDiv.innerHTML = `<div class="verdict bad">${errors.join("；")}</div>`;
+      resDiv.innerHTML = `<div class="verdict bad"><span class="line">${errors.map(esc).join("<br>")}</span></div>`;
+      document.querySelector("#yearTable thead").innerHTML = "";
       document.querySelector("#yearTable tbody").innerHTML = "";
       return;
     }
 
     const years1 = inp.retirementAge - inp.currentAge;
     const retireYears = inp.deathAge - inp.retirementAge;
-
-    const fv = fvAtRetirement(inp.currentAssets, inp.monthly, years1, inp.r);
-    const req = requiredAtRetirement(inp.annualExpense, years1, retireYears, inp.r, inp.i);
-    const gap = fv - req;
-    const needMonthly = monthlyNeeded(req, inp.currentAssets, years1, inp.r);
+    const sim = simulate(inp);
+    const fv = sum(sim.atRetirement);
+    const req = requiredAtRetirement(inp, sim);
+    const totalCosts = sum(sim.path.map((r) => r.costs));
+    const gap = req === null ? NaN : fv - req;
+    const need = monthlyNeeded(inp);
+    const curMonthly = sum(inp.holdings.map((h) => h.monthly));
     const earliest = earliestRetirementAge(inp);
-    const realReturn = (1 + inp.r) / (1 + inp.i) - 1;
+    const blended = blendedReturn(inp.holdings, sim.atRetirement);
+    const realReturn = (1 + blended) / (1 + inp.i) - 1;
+    const annualToday = inp.monthlyExpense * 12;
+    const firstYearExpense = annualToday * Math.pow(1 + inp.i, years1);
+    const multi = inp.holdings.length > 1;
+    const breakdown = (vals, f) => inp.holdings.map((h, k) => `${esc(h.name)} ${f(vals[k])}`).join("、");
 
-    const pass = fv >= req;
-    const verdictHtml = pass
+    const verdictHtml = sim.ok
       ? `<div class="verdict good">
-           <span class="big">✅ 可以在 ${inp.retirementAge} 歲退休</span>
-           退休時預估資產 ${fmt(fv)}，高於所需 ${fmt(req)}，餘裕 ${fmt(gap)}。
+           <span class="big">✅ 你可以在 ${inp.retirementAge} 歲退休</span>
+           <span class="line">退休時大約會有 ${wan(fv)}，需要的是 ${wan(req)}，多出 ${wan(gap)}。<br>到 ${inp.deathAge} 歲時還會剩下約 ${wan(sim.finalAssets)}。</span>
          </div>`
       : `<div class="verdict bad">
-           <span class="big">❌ 目前計畫無法在 ${inp.retirementAge} 歲退休</span>
-           退休時預估資產 ${fmt(fv)}，低於所需 ${fmt(req)}，缺口 ${fmt(-gap)}。
+           <span class="big">❌ 照目前的計畫，${inp.retirementAge} 歲還不能退休</span>
+           <span class="line">退休時大約會有 ${wan(fv)}，但需要 ${wan(req)}，還差 ${wan(-gap)}。<br>照這樣下去，錢會在 ${sim.depletedAt} 歲用完。</span>
          </div>`;
 
-    const earliestHtml = earliest
+    let needHtml;
+    if (need === null) {
+      needHtml = `<div class="stat">
+          <div class="k">想 ${inp.retirementAge} 歲退休，每月要存多少？</div>
+          <div class="v" style="color:#fca5a5;">算不出來</div>
+          <div class="sub">金額大到不合理，請檢查花費或退休年齡</div>
+        </div>`;
+    } else {
+      const diff = need.total - curMonthly;
+      const enough = diff <= 1;
+      needHtml = `<div class="stat">
+          <div class="k">想 ${inp.retirementAge} 歲退休，每月要存多少？</div>
+          <div class="v" style="color:${enough ? '#86efac' : '#fcd34d'}">${yuan(need.total)}</div>
+          <div class="sub">${enough
+            ? `你目前每月存 ${yuan(curMonthly)}，已經夠了 ✓`
+            : `比你目前的 ${yuan(curMonthly)} 還要多存 ${yuan(diff)}`}
+            ${multi && need.total > 0 ? `<br>建議分配：${breakdown(need.perHolding, yuan)}` : ""}</div>
+        </div>`;
+    }
+
+    const earliestHtml = earliest !== null
       ? `<div class="stat">
-           <div class="k">以目前每月 ${fmt(inp.monthly)} 投入，最早可退休年齡</div>
+           <div class="k">照目前的存法，最早幾歲能退休？</div>
            <div class="v">${earliest} 歲</div>
+           <div class="sub">以每月共存 ${yuan(curMonthly)} 計算</div>
          </div>`
       : `<div class="stat">
-           <div class="k">以目前每月 ${fmt(inp.monthly)} 投入</div>
-           <div class="v" style="color:#fca5a5;">無法在離世前退休</div>
+           <div class="k">照目前的存法，最早幾歲能退休？</div>
+           <div class="v" style="color:#fca5a5;">到 ${inp.deathAge} 歲都不夠</div>
+           <div class="sub">以每月共存 ${yuan(curMonthly)} 計算，需要多存一點或晚點退休</div>
          </div>`;
 
     resDiv.innerHTML = `
       ${verdictHtml}
       <div class="result-grid">
         <div class="stat">
-          <div class="k">退休時預估資產（${inp.retirementAge} 歲）</div>
-          <div class="v">${fmt(fv)}</div>
+          <div class="k">退休時（${inp.retirementAge} 歲）會有多少錢？</div>
+          <div class="v">${wan(fv)}</div>
+          ${multi ? `<div class="sub">${breakdown(sim.atRetirement, wanText)}</div>` : ""}
         </div>
         <div class="stat">
-          <div class="k">退休時所需資產</div>
-          <div class="v">${fmt(req)}</div>
+          <div class="k">退休需要準備多少錢？</div>
+          <div class="v">${wan(req)}</div>
+          <div class="sub">要撐過退休後的 ${retireYears} 年，並跟上 ${pct1(inp.i)} 的通膨${inp.incomes.length ? "；其他收入已先扣掉" : ""}</div>
         </div>
-        <div class="stat">
-          <div class="k">要在 ${inp.retirementAge} 歲退休，每月需投入</div>
-          <div class="v" style="color:${needMonthly <= inp.monthly ? '#86efac' : '#fcd34d'}">${fmt(needMonthly)}</div>
-        </div>
+        ${needHtml}
         ${earliestHtml}
         <div class="stat">
-          <div class="k">實質報酬率（扣除通膨）</div>
-          <div class="v">${fmtPct(realReturn)}</div>
+          <div class="k">退休後一年要花多少？（含通膨）</div>
+          <div class="v">約 ${wan(firstYearExpense)}／年</div>
+          <div class="sub">現在的物價是 ${wanText(annualToday)}／年，到 ${inp.retirementAge} 歲時因為通膨會漲到這個數字（每月約 ${yuan(firstYearExpense / 12)}）</div>
         </div>
         <div class="stat">
-          <div class="k">退休首年生活費（名目）</div>
-          <div class="v">${fmt(inp.annualExpense * Math.pow(1 + inp.i, years1))}</div>
+          <div class="k">你的資產平均一年賺多少？</div>
+          <div class="v">${pct1(blended)}</div>
+          <div class="sub">扣掉 ${pct1(inp.i)} 通膨後，實際購買力每年增加約 ${pct1(realReturn)}</div>
         </div>
       </div>
-      <p class="small-note">
-        「每月需投入」是為了在 ${inp.retirementAge} 歲達成退休目標，於累積期內每月定期定額的建議金額；若小於等於目前金額，代表計畫已達標。
-      </p>
+      ${totalCosts > 0 ? `<p class="small-note">退休期間預估付出手續費與稅共約 ${wan(totalCosts)}，上面的數字都已經扣掉。</p>` : ""}
+      <details>
+        <summary>這些數字怎麼算的？</summary>
+        <p>退休前：每筆資產各自照你填的報酬率成長，每個月底存入你設定的金額。</p>
+        <p>退休後：每年初先用其他收入（勞保年金等）付生活費，不夠的從各筆資產按當時的比例領出、多出來的按比例存回，剩下的繼續成長；生活費每年照通膨往上調。</p>
+        <p>其他收入勾了「隨通膨」，代表你填的是現在的物價，之後會逐年調高；沒勾就是固定金額。退休前就開始領的收入，會依你各筆資產的每月存入比例存進去。</p>
+        <p>「每月要存多少」是合計，分配比例照你目前各筆的每月存入比例（都是 0 就照現有金額比例）。「需要準備多少」假設退休後不再存錢。</p>
+        <p>賣出成本與稅（打開「賣出成本與稅」才會看到）：退休後從資產領錢時，會多賣一點來付手續費與獲利稅；獲利稅只對「賣出部分的獲利」課，成本用你存進去的錢累計，現在已有的部位視為成本。買進手續費、ETF 內扣費用、股息的稅，直接從報酬率扣掉就好。</p>
+        <p>金額滑鼠移上去可以看到精確數字。</p>
+      </details>
     `;
 
-    buildYearTable(inp, inp.monthly);
+    buildYearTable(inp, sim);
   }
 
   document.getElementById("calcBtn").addEventListener("click", calculate);
-  // run once with defaults
+  document.querySelectorAll(".chip[data-age]").forEach((chip) =>
+    chip.addEventListener("click", () => {
+      document.getElementById("deathAge").value = chip.dataset.age;
+      calculate();
+    })
+  );
+
+  // 預設資料並先算一次
+  [
+    { name: "定存", rate: 3, amount: 300000, monthly: 5000, sellCost: 0, gainTax: 0 },
+    { name: "0050 ETF", rate: 7, amount: 500000, monthly: 20000, sellCost: 0, gainTax: 0 },
+  ].forEach(addHoldingRow);
+  addIncomeRow({ name: "勞保年金", amount: 20000, freq: "monthly", fromAge: 65, toAge: null, indexed: true });
+  updateAnnualHint();
   calculate();
 </script>
 </body>
