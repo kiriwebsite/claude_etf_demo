@@ -29,7 +29,7 @@
     line-height: 1.55;
   }
   .wrap {
-    max-width: 1440px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 28px 20px 60px;
   }
@@ -49,7 +49,7 @@
   }
   .grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 3fr 2fr; /* 輸入區欄位多，給它寬一點 */
     gap: 20px;
   }
   @media (max-width: 860px) {
@@ -127,7 +127,7 @@
   }
   .holding-head, .holding {
     display: grid;
-    grid-template-columns: 1.4fr 0.9fr 1.2fr 1.2fr 34px;
+    grid-template-columns: 1.2fr 0.75fr 1fr 1fr 0.95fr 1fr 0.6fr 34px;
     gap: 8px;
     align-items: center;
   }
@@ -139,24 +139,52 @@
   }
   .holding { margin-bottom: 8px; }
   .holding .field label { display: none; }
-  /* 進階欄位（賣出成本與稅）：預設隱藏 */
-  .adv { display: none; }
-  .show-adv .holding .adv { display: flex; }
-  .show-adv .holding-head .adv { display: block; }
-  .show-adv .holding-head, .show-adv .holding {
-    grid-template-columns: 1.3fr 0.8fr 1.1fr 1.1fr 0.9fr 0.9fr 34px;
-  }
-  .toggle {
-    font-size: 12px;
-    color: var(--muted);
+  .holding select { padding: 8px 6px; font-size: 13px; height: 38px; }
+  .holding input:disabled { opacity: 0.35; }
+
+  /* 說明用的 ⓘ 按鈕：點一下或滑鼠移上去顯示浮動說明 */
+  .info {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    margin-left: 4px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+    background: transparent;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    font-style: italic;
+    font-family: Georgia, serif;
+    line-height: 1;
     cursor: pointer;
-    white-space: nowrap;
+    vertical-align: middle;
+    flex: none;
   }
-  .toggle input { accent-color: var(--accent); margin: 0; }
-  .holdings-title.split { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .info:hover { border-color: var(--accent); color: var(--accent); }
+  .floating-tip {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    background: #0b1220;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.55;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+  .floating-tip.wide { white-space: normal; max-width: min(320px, calc(100vw - 16px)); }
+  /* 用「萬／億」顯示的金額：hover 或點一下看精確數字 */
+  .amt { border-bottom: 1px dotted rgba(148, 163, 184, 0.6); cursor: help; }
+
   .holding input { padding: 8px 10px; font-size: 14px; }
   .btn-del {
     background: transparent;
@@ -183,7 +211,7 @@
   select:focus { border-color: var(--accent); }
   .income-head, .income {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 0.9fr 0.6fr 0.6fr 44px 34px;
+    grid-template-columns: 1.2fr 1fr 0.9fr 0.6fr 0.6fr 62px 34px;
     gap: 6px;
     align-items: center;
   }
@@ -193,6 +221,9 @@
     padding: 0 2px;
     margin-bottom: 4px;
   }
+  /* 表頭文字與 ⓘ 同一列：ⓘ 不會被擠到下一行 */
+  .holding-head span, .income-head span { display: flex; align-items: center; }
+  .income-head span { white-space: nowrap; }
   .income { margin-bottom: 8px; }
   .income .field label { display: none; }
   .income input, .income select { padding: 8px 8px; font-size: 13px; }
@@ -437,17 +468,15 @@
         </div>
       </div>
 
-      <div class="holdings-title split">
-        <span>你的資產（可以加好幾筆：定存、ETF、投資型保單…）</span>
-        <label class="toggle"><input type="checkbox" id="advToggle" /> 賣出成本與稅</label>
-      </div>
+      <div class="holdings-title">你的資產（可以加好幾筆：定存、ETF、投資型保單…）</div>
       <div class="holding-head">
         <span>名稱</span>
         <span>預期年報酬 (%)</span>
         <span>現在有多少 (NT$)</span>
         <span>每月再存 (NT$)</span>
-        <span class="adv">賣出成本 (%)</span>
-        <span class="adv">獲利稅率 (%)</span>
+        <span>賣出成本 (%)<button type="button" class="info" data-tip="賣出時的手續費＋交易稅，占賣出金額的比例。台股 ETF 約 0.15%（證交稅 0.1%＋手續費）；定存、保單通常填 0。">i</button></span>
+        <span>獲利怎麼課稅<button type="button" class="info" data-tip="不課稅：台股 ETF、台股個股（證所稅停徵）、多數保單。固定稅率：每次賣出的獲利都按固定比例課，適合海外券商所在國會預扣的情況。海外所得：台灣的最低稅負制，海外 ETF／美股適用——一年內賣出的獲利合計不到 100 萬就完全不課；達到 100 萬才整筆計入基本所得額，超過 750 萬免稅額的部分課 20%（2024 年起的法規數字，會跟著通膨調整；假設退休後沒有其他要計入的所得）。">i</button></span>
+        <span>稅率 (%)</span>
         <span></span>
       </div>
       <div id="holdings"></div>
@@ -460,7 +489,7 @@
         <span>怎麼領</span>
         <span>從幾歲</span>
         <span>到幾歲</span>
-        <span>隨通膨</span>
+        <span>隨通膨<button type="button" class="info" data-tip="勾選＝你填的是現在的物價，之後每年會跟著通膨調高（勞保年金、勞退月退適用）。不勾＝固定金額，幾十年後還是領一樣多（多數年金險、固定租金適用）。">i</button></span>
         <span></span>
       </div>
       <div id="incomes"></div>
@@ -503,20 +532,27 @@
     if (abs < 1e8) return sign + (abs / 1e4).toLocaleString("zh-Hant-TW", { maximumFractionDigits: abs < 1e6 ? 1 : 0 }) + " 萬";
     return sign + (abs / 1e8).toLocaleString("zh-Hant-TW", { maximumFractionDigits: 2 }) + " 億";
   };
-  // 滑鼠移上去可看精確金額
-  const wan = (n) => (isFinite(n) ? `<span title="NT$ ${Math.round(n).toLocaleString()}">${wanText(n)}</span>` : "—");
+  // 滑鼠移上去（或點一下）可看精確金額，由下方的浮動說明機制顯示
+  const wan = (n) => (isFinite(n) ? `<span class="amt" data-exact="NT$ ${Math.round(n).toLocaleString()}">${wanText(n)}</span>` : "—");
   // 每月金額用精確數字
   const yuan = (n) => (isFinite(n) ? Math.round(n).toLocaleString() + " 元" : "—");
   const pct1 = (n) => (n * 100).toFixed(1) + "%";
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   // ===== 模型開始（純函式，不碰 DOM）=====
-  // p = { currentAge, retirementAge, deathAge, monthlyExpense, i, holdings, incomes, baseAge? }
-  //   holdings: [{ name, r, amount, monthly, sellCost, gainTax, cost? }]   r、i、sellCost、gainTax 為小數（7% → 0.07）
-  //             sellCost=賣出時的手續費＋交易稅比例；gainTax=賣出時對獲利課的稅率；cost=成本（預設＝amount，即既有部位視為成本）
+  // p = { currentAge, retirementAge, deathAge, monthlyExpense, i, holdings, incomes, overseas?, baseAge? }
+  //   holdings: [{ name, r, amount, monthly, sellCost, taxMode, gainTax, cost? }]   r、i、sellCost、gainTax 為小數（7% → 0.07）
+  //             sellCost=賣出時的手續費＋交易稅比例；cost=成本（預設＝amount，即既有部位視為成本）
+  //             taxMode=none|fixed|overseas：fixed 時每次賣出的獲利 × gainTax；overseas 時獲利計入當年海外所得走門檻制
   //   incomes:  [{ name, amount, freq, fromAge, toAge, indexed }]   freq=monthly|yearly|once；toAge=null 為終身；indexed=隨通膨
+  //   overseas: { threshold, exempt, rate, otherIncome }  最低稅負制參數，金額為今日幣值（隨通膨調整）
+  //             當年海外所得 >= threshold 才計入；(海外所得 + otherIncome - exempt) 的正數部分 × rate；稅在隔年支付
   //   baseAge：通膨換算的基準年齡，預設 currentAge（求解時 currentAge 會移到退休年齡，通膨仍從原始年齡起算）
   const sum = (arr) => arr.reduce((s, x) => s + x, 0);
+  const NO_OVERSEAS = { threshold: 0, exempt: 0, rate: 0, otherIncome: 0 };
+  // 台灣最低稅負制（2024 年起）：海外所得達 100 萬才計入基本所得額，超過 750 萬免稅額的部分課 20%
+  // otherIncome=0：假設退休後沒有其他要計入基本所得額的所得（勞保年金免稅）
+  const OVERSEAS_TW = { threshold: 1e6, exempt: 7.5e6, rate: 0.2, otherIncome: 0 };
 
   // 某一歲的其他收入合計（名目）
   function incomeAt(p, age) {
@@ -541,15 +577,20 @@
     const baseAge = p.baseAge ?? p.currentAge;
     const rms = hs.map((h) => Math.pow(1 + h.r, 1 / 12) - 1);
     const sc = hs.map((h) => h.sellCost || 0);
-    const gt = hs.map((h) => h.gainTax || 0);
+    const gt = hs.map((h) => (h.taxMode === "fixed" ? h.gainTax || 0 : 0));
+    const ov = hs.map((h) => h.taxMode === "overseas");
+    const ovp = p.overseas || NO_OVERSEAS;
+    const hasOverseas = ov.some(Boolean);
     const cw = contributionWeights(hs);
     let bal = hs.map((h) => h.amount);
     let cost = hs.map((h) => h.cost ?? h.amount);
     let atRetirement = null;
     let costAtRetirement = null;
+    let pendingTax = 0; // 去年賣出海外資產產生的稅，今年繳
     const path = [];
     for (let age = p.currentAge; age < p.deathAge; age++) {
       const t = age - baseAge;
+      const infl = Math.pow(1 + p.i, t);
       const start = sum(bal);
       const retired = age >= p.retirementAge;
       if (retired && atRetirement === null) { atRetirement = bal.slice(); costAtRetirement = cost.slice(); }
@@ -557,6 +598,11 @@
       let expense = 0;
       let flow;
       let costs = 0; // 這一年付出的手續費＋稅
+      let overseasIncome = 0; // 這一年賣出海外資產的獲利
+      let overseasTax = 0; // 這一年產生的海外所得稅（隔年繳）
+      let overseasCounted = false; // 這一年的海外所得有沒有達到計入門檻
+      const taxPaid = pendingTax;
+      pendingTax = 0;
       if (!retired) {
         // 存錢期：其他收入年初依投入比例存入；各項目每月底複利並投入（投入都算進成本）
         bal = bal.map((b, k) => {
@@ -568,8 +614,9 @@
         });
         flow = sum(hs.map((h) => h.monthly)) * 12 + income;
       } else {
-        // 退休期：年初先用其他收入付生活費
-        expense = p.monthlyExpense * 12 * Math.pow(1 + p.i, t);
+        // 退休期：年初先用其他收入付生活費（加上去年產生、今年要繳的海外所得稅）
+        expense = p.monthlyExpense * 12 * infl + taxPaid;
+        costs += taxPaid;
         const net = income - expense;
         if (net >= 0) {
           // 多的依餘額比例存回（沒餘額就依投入比例）
@@ -579,13 +626,14 @@
             return (b + add) * (1 + hs[k].r);
           });
         } else if (start > 0) {
-          // 不夠的依餘額比例賣出；賣出總額要多到扣掉手續費與獲利稅後剛好補上缺口
+          // 不夠的依餘額比例賣出；賣出總額要多到扣掉手續費與固定獲利稅後剛好補上缺口
           const gain = bal.map((b, k) => (b > 0 ? Math.max(0, 1 - cost[k] / b) : 0)); // 各項目的獲利佔比
           const netFactor = sum(bal.map((b, k) => (b / start) * (1 - sc[k] - gt[k] * gain[k])));
           const gross = -net / netFactor;
           bal = bal.map((b, k) => {
             const sell = gross * (b / start);
             costs += sell * (sc[k] + gt[k] * gain[k]);
+            if (ov[k]) overseasIncome += sell * gain[k];
             if (b > 0) cost[k] -= sell * (cost[k] / b);
             return (b - sell) * (1 + hs[k].r);
           });
@@ -594,9 +642,25 @@
           bal = bal.map((b, k) => (b + (k === 0 ? net : 0)) * (1 + hs[k].r));
         }
         flow = net;
+        // 海外所得門檻制：當年海外所得達門檻才計入基本所得額，超過免稅額的部分課稅；門檻與其他所得隨通膨
+        if (hasOverseas && overseasIncome > 0 && overseasIncome >= ovp.threshold * infl) {
+          overseasCounted = true;
+          overseasTax = Math.max(0, overseasIncome + ovp.otherIncome * infl - ovp.exempt * infl) * ovp.rate;
+          if (age === p.deathAge - 1) {
+            // 最後一年沒有「隔年」可繳，直接從年末餘額按比例扣
+            const s = sum(bal);
+            if (s > 0) bal = bal.map((b) => b - overseasTax * (b / s));
+            costs += overseasTax;
+          } else {
+            pendingTax = overseasTax;
+          }
+        }
       }
       const end = sum(bal);
-      path.push({ age, retired, start, income, expense, flow, costs, end, real: end / Math.pow(1 + p.i, t + 1), bal: bal.slice() });
+      path.push({
+        age, retired, start, income, expense, flow, costs, end, real: end / Math.pow(1 + p.i, t + 1), bal: bal.slice(),
+        overseasIncome, overseasTax, overseasCounted,
+      });
       if (end < 0) return { path, ok: false, depletedAt: age, atRetirement, costAtRetirement, finalAssets: end };
     }
     if (atRetirement === null) { atRetirement = bal.slice(); costAtRetirement = cost.slice(); }
@@ -684,15 +748,25 @@
       <div class="field"><label>預期年報酬 (%)</label><input type="number" class="h-rate" step="0.1" value="${h.rate}" /></div>
       <div class="field"><label>現在有多少 (NT$)</label><input type="number" class="h-amount" min="0" value="${h.amount}" /></div>
       <div class="field"><label>每月再存 (NT$)</label><input type="number" class="h-monthly" min="0" value="${h.monthly}" /></div>
-      <div class="field adv"><label>賣出成本 (%)</label><input type="number" class="h-sell" min="0" step="0.01" value="${h.sellCost ?? 0}" title="賣出時的手續費＋交易稅，占賣出金額的比例。台股 ETF 約 0.15%（證交稅 0.1%＋手續費）" /></div>
-      <div class="field adv"><label>獲利稅率 (%)</label><input type="number" class="h-tax" min="0" step="1" value="${h.gainTax ?? 0}" title="賣出時對「獲利部分」課的稅率。台股 ETF 填 0；美股 ETF 多數人也是 0，年度海外所得超過 100 萬且基本所得額超過 750 萬才填 20" /></div>
+      <div class="field"><label>賣出成本 (%)</label><input type="number" class="h-sell" min="0" step="0.01" value="${h.sellCost ?? 0}" /></div>
+      <div class="field"><label>獲利怎麼課稅</label>
+        <select class="h-taxmode">
+          ${[["none", "不課稅"], ["fixed", "固定稅率"], ["overseas", "海外所得"]]
+            .map(([v, label]) => `<option value="${v}"${(h.taxMode ?? "none") === v ? " selected" : ""}>${label}</option>`).join("")}
+        </select></div>
+      <div class="field"><label>稅率 (%)</label><input type="number" class="h-tax" min="0" step="1" value="${h.gainTax ?? 0}" /></div>
       <button type="button" class="btn-del" title="刪除這筆">✕</button>
     `;
+    const modeEl = row.querySelector(".h-taxmode");
+    const taxEl = row.querySelector(".h-tax");
+    const syncMode = () => { taxEl.disabled = modeEl.value !== "fixed"; };
+    modeEl.addEventListener("change", syncMode);
+    syncMode();
     row.querySelector(".btn-del").addEventListener("click", () => row.remove());
     holdingsEl.appendChild(row);
   }
   document.getElementById("addHolding").addEventListener("click", () =>
-    addHoldingRow({ name: "", rate: 5, amount: 0, monthly: 0, sellCost: 0, gainTax: 0 })
+    addHoldingRow({ name: "", rate: 5, amount: 0, monthly: 0, sellCost: 0, taxMode: "none", gainTax: 0 })
   );
 
   // ----- 其他收入 UI -----
@@ -710,7 +784,7 @@
         </select></div>
       <div class="field"><label>從幾歲</label><input type="number" class="inc-from" min="0" max="120" value="${inc.fromAge}" /></div>
       <div class="field"><label>到幾歲</label><input type="number" class="inc-to" min="0" max="120" placeholder="終身" value="${inc.toAge ?? ""}" /></div>
-      <div class="field check"><label>隨通膨</label><input type="checkbox" class="inc-indexed" title="勾選＝金額用現在的物價填，之後會跟著通膨調高（勞保年金適用）；不勾＝固定金額（多數保單適用）"${inc.indexed ? " checked" : ""} /></div>
+      <div class="field check"><label>隨通膨<button type="button" class="info" data-tip="勾選＝你填的是現在的物價，之後每年會跟著通膨調高（勞保年金、勞退月退適用）。不勾＝固定金額，幾十年後還是領一樣多（多數年金險、固定租金適用）。">i</button></label><input type="checkbox" class="inc-indexed"${inc.indexed ? " checked" : ""} /></div>
       <button type="button" class="btn-del" title="刪除這筆">✕</button>
     `;
     const typeEl = row.querySelector(".inc-type");
@@ -724,9 +798,6 @@
   document.getElementById("addIncome").addEventListener("click", () =>
     addIncomeRow({ name: "", amount: 0, freq: "monthly", fromAge: 65, toAge: null, indexed: false })
   );
-
-  const advToggle = document.getElementById("advToggle");
-  advToggle.addEventListener("change", () => document.body.classList.toggle("show-adv", advToggle.checked));
 
   const monthlyExpenseEl = document.getElementById("monthlyExpense");
   function updateAnnualHint() {
@@ -758,15 +829,17 @@
       const amount = parseFloat(row.querySelector(".h-amount").value);
       const monthly = parseFloat(row.querySelector(".h-monthly").value);
       const sellCost = parseFloat(row.querySelector(".h-sell").value) || 0; // 留空視為 0
-      const gainTax = parseFloat(row.querySelector(".h-tax").value) || 0;
+      const taxMode = row.querySelector(".h-taxmode").value;
+      const gainTax = taxMode === "fixed" ? parseFloat(row.querySelector(".h-tax").value) || 0 : 0;
       if (!isFinite(rate)) errors.push(`請填「${name}」的預期年報酬`);
       else if (rate / 100 <= -1) errors.push(`「${name}」的報酬率不合理`);
       if (!isFinite(amount)) errors.push(`請填「${name}」現在有多少`);
       if (!isFinite(monthly)) errors.push(`請填「${name}」每月再存多少（沒有就填 0）`);
-      if (sellCost < 0 || gainTax < 0 || (sellCost + gainTax) / 100 >= 1) errors.push(`「${name}」的賣出成本或獲利稅率不合理`);
-      inp.holdings.push({ name, r: rate / 100, amount, monthly, sellCost: sellCost / 100, gainTax: gainTax / 100 });
+      if (sellCost < 0 || gainTax < 0 || (sellCost + gainTax) / 100 >= 1) errors.push(`「${name}」的賣出成本或稅率不合理`);
+      inp.holdings.push({ name, r: rate / 100, amount, monthly, sellCost: sellCost / 100, taxMode, gainTax: gainTax / 100 });
     });
     if (inp.holdings.length === 0) errors.push("至少要有一筆資產");
+    if (inp.holdings.some((h) => h.taxMode === "overseas")) inp.overseas = OVERSEAS_TW;
     document.querySelectorAll("#incomes .income").forEach((row, idx) => {
       const name = row.querySelector(".inc-name").value.trim() || `收入 ${idx + 1}`;
       const amount = parseFloat(row.querySelector(".inc-amount").value);
@@ -794,7 +867,8 @@
     const tbody = document.querySelector("#yearTable tbody");
     const names = inp.holdings.map((h) => esc(h.name));
     const hasIncome = inp.incomes.length > 0;
-    const hasCosts = inp.holdings.some((h) => h.sellCost > 0 || h.gainTax > 0);
+    const hasOverseas = inp.holdings.some((h) => h.taxMode === "overseas");
+    const hasCosts = hasOverseas || inp.holdings.some((h) => h.sellCost > 0 || h.gainTax > 0);
     thead.innerHTML = `
       <tr>
         <th>年齡</th>
@@ -802,6 +876,7 @@
         <th>年初有多少</th>
         <th>這一年存入 / 領出</th>
         ${hasIncome ? "<th>其他收入</th>" : ""}
+        ${hasOverseas ? '<th>海外所得<button type="button" class="info" data-tip="這一年賣出海外資產的獲利。黃色＝達到 100 萬計入門檻但沒超過 750 萬免稅額，所以不用繳；紅色＝要繳稅，稅額列在隔年的「手續費＋稅」（門檻數字會跟著通膨調整）。">i</button></th>' : ""}
         ${hasCosts ? "<th>手續費＋稅</th>" : ""}
         <th>年末有多少</th>
         <th>換算成今天的物價</th>
@@ -820,6 +895,7 @@
         <td data-label="年初有多少">${wan(row.start)}</td>
         <td data-label="這一年存入 / 領出" style="color:${row.flow >= 0 ? '#86efac' : '#fca5a5'}">${row.flow >= 0 ? '+' : ''}${wan(row.flow)}</td>
         ${hasIncome ? `<td data-label="其他收入">${row.income > 0 ? wan(row.income) : "—"}</td>` : ""}
+        ${hasOverseas ? `<td data-label="海外所得" style="color:${row.overseasTax > 0 ? "#fca5a5" : row.overseasCounted ? "#fcd34d" : "inherit"}">${row.overseasIncome > 0 ? wan(row.overseasIncome) + (row.overseasTax > 0 ? `<br><span class="small-note" style="margin:0;color:#fca5a5">稅 ${wanText(row.overseasTax)}</span>` : "") : "—"}</td>` : ""}
         ${hasCosts ? `<td data-label="手續費＋稅" style="color:#fca5a5">${row.costs > 0 ? "-" + wan(row.costs) : "—"}</td>` : ""}
         <td data-label="年末有多少">${wan(row.end)}</td>
         <td data-label="換算成今天的物價">${wan(row.real)}</td>
@@ -830,7 +906,7 @@
     if (sim.depletedAt !== null) {
       const warn = document.createElement("tr");
       warn.className = "warn-row";
-      warn.innerHTML = `<td colspan="${6 + (hasIncome ? 1 : 0) + (hasCosts ? 1 : 0) + names.length}" style="color:#fca5a5;text-align:center;">⚠ 錢在 ${sim.depletedAt} 歲用完了</td>`;
+      warn.innerHTML = `<td colspan="${6 + (hasIncome ? 1 : 0) + (hasOverseas ? 1 : 0) + (hasCosts ? 1 : 0) + names.length}" style="color:#fca5a5;text-align:center;">⚠ 錢在 ${sim.depletedAt} 歲用完了</td>`;
       tbody.appendChild(warn);
     }
   }
@@ -852,6 +928,10 @@
     const fv = sum(sim.atRetirement);
     const req = requiredAtRetirement(inp, sim);
     const totalCosts = sum(sim.path.map((r) => r.costs));
+    const hasOverseas = inp.holdings.some((h) => h.taxMode === "overseas");
+    const overseasTaxTotal = sum(sim.path.map((r) => r.overseasTax));
+    const overseasTaxYears = sim.path.filter((r) => r.overseasTax > 0).length;
+    const overseasCountedYears = sim.path.filter((r) => r.overseasCounted).length;
     const gap = req === null ? NaN : fv - req;
     const need = monthlyNeeded(inp);
     const curMonthly = sum(inp.holdings.map((h) => h.monthly));
@@ -932,19 +1012,64 @@
         </div>
       </div>
       ${totalCosts > 0 ? `<p class="small-note">退休期間預估付出手續費與稅共約 ${wan(totalCosts)}，上面的數字都已經扣掉。</p>` : ""}
+      ${hasOverseas ? `<p class="small-note">${overseasTaxTotal > 0
+        ? `海外所得稅：退休期間有 ${overseasTaxYears} 年要繳，合計約 ${wan(overseasTaxTotal)}（已含在上面的手續費與稅裡）。`
+        : overseasCountedYears > 0
+          ? `海外所得稅：有 ${overseasCountedYears} 年的海外所得達到 100 萬計入門檻，但都沒超過 750 萬免稅額，所以一毛都不用繳 ✓`
+          : `海外所得稅：每一年賣出海外資產的獲利都沒達到 100 萬計入門檻，完全不用繳 ✓`}</p>` : ""}
       <details>
         <summary>這些數字怎麼算的？</summary>
         <p>退休前：每筆資產各自照你填的報酬率成長，每個月底存入你設定的金額。</p>
         <p>退休後：每年初先用其他收入（勞保年金等）付生活費，不夠的從各筆資產按當時的比例領出、多出來的按比例存回，剩下的繼續成長；生活費每年照通膨往上調。</p>
         <p>其他收入勾了「隨通膨」，代表你填的是現在的物價，之後會逐年調高；沒勾就是固定金額。退休前就開始領的收入，會依你各筆資產的每月存入比例存進去。</p>
         <p>「每月要存多少」是合計，分配比例照你目前各筆的每月存入比例（都是 0 就照現有金額比例）。「需要準備多少」假設退休後不再存錢。</p>
-        <p>賣出成本與稅（打開「賣出成本與稅」才會看到）：退休後從資產領錢時，會多賣一點來付手續費與獲利稅；獲利稅只對「賣出部分的獲利」課，成本用你存進去的錢累計，現在已有的部位視為成本。買進手續費、ETF 內扣費用、股息的稅，直接從報酬率扣掉就好。</p>
-        <p>金額滑鼠移上去可以看到精確數字。</p>
+        <p>賣出成本與稅（打開「賣出成本與稅」才會看到）：退休後從資產領錢時，會多賣一點來付手續費與固定稅率的獲利稅；獲利稅只對「賣出部分的獲利」課，成本用你存進去的錢累計，現在已有的部位視為成本。買進手續費、ETF 內扣費用、股息的稅、定存利息的稅，直接從報酬率扣掉就好。</p>
+        <p>海外所得（台灣最低稅負制）：選這個的資產，每年賣出的獲利會加總成「當年海外所得」。沒達到計入門檻 100 萬就完全不課；達到了就整筆加進基本所得額，超過免稅額 750 萬的部分課 20%（2024 年起的法規數字；假設退休後沒有其他要計入基本所得額的所得）。門檻和免稅額跟著通膨調整；稅在隔年從資產賣出支付（最後一年直接從結餘扣）；沒扣一般所得稅額，所以算出來會比實際繳的多一點或一樣。</p>
+        <p>金額滑鼠移上去（手機點一下）可以看到精確數字。</p>
       </details>
     `;
 
     buildYearTable(inp, sim);
   }
+
+  // ----- 浮動說明：ⓘ 按鈕（data-tip）與金額精確值（data-exact）共用 -----
+  // 滑鼠移上去顯示、移開就收；點一下會釘住（手機用），再點一次或點別處取消
+  const tipEl = document.createElement("div");
+  tipEl.className = "floating-tip";
+  document.body.appendChild(tipEl);
+  let pinnedTip = null;
+  function showTip(target) {
+    const isInfo = "tip" in target.dataset;
+    tipEl.textContent = isInfo ? target.dataset.tip : target.dataset.exact;
+    tipEl.classList.toggle("wide", isInfo);
+    tipEl.style.display = "block";
+    const r = target.getBoundingClientRect();
+    const tr = tipEl.getBoundingClientRect();
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - tr.width / 2), window.innerWidth - tr.width - 8);
+    let top = r.top - tr.height - 6;
+    if (top < 8) top = r.bottom + 6;
+    tipEl.style.left = left + "px";
+    tipEl.style.top = top + "px";
+  }
+  function hideTip() { tipEl.style.display = "none"; }
+  const tipTarget = (e) => (e.target.closest ? e.target.closest("[data-tip],[data-exact]") : null);
+  document.addEventListener("mouseover", (e) => { const t = tipTarget(e); if (t && !pinnedTip) showTip(t); });
+  document.addEventListener("mouseout", (e) => { if (tipTarget(e) && !pinnedTip) hideTip(); });
+  document.addEventListener("click", (e) => {
+    const t = tipTarget(e);
+    if (t) {
+      e.preventDefault();
+      if (pinnedTip === t) { pinnedTip = null; hideTip(); } else { pinnedTip = t; showTip(t); }
+    } else if (pinnedTip) {
+      pinnedTip = null;
+      hideTip();
+    }
+  });
+  window.addEventListener("scroll", () => {
+    if (pinnedTip && !document.contains(pinnedTip)) pinnedTip = null; // 表格重畫後原元素已不在
+    if (pinnedTip) showTip(pinnedTip); else hideTip();
+  }, true);
+  window.addEventListener("resize", hideTip);
 
   document.getElementById("calcBtn").addEventListener("click", calculate);
   document.querySelectorAll(".chip[data-age]").forEach((chip) =>
@@ -956,8 +1081,8 @@
 
   // 預設資料並先算一次
   [
-    { name: "定存", rate: 3, amount: 300000, monthly: 5000, sellCost: 0, gainTax: 0 },
-    { name: "0050 ETF", rate: 7, amount: 500000, monthly: 20000, sellCost: 0, gainTax: 0 },
+    { name: "定存", rate: 3, amount: 300000, monthly: 5000, sellCost: 0, taxMode: "none", gainTax: 0 },
+    { name: "0050 ETF", rate: 7, amount: 500000, monthly: 20000, sellCost: 0, taxMode: "none", gainTax: 0 },
   ].forEach(addHoldingRow);
   addIncomeRow({ name: "勞保年金", amount: 20000, freq: "monthly", fromAge: 65, toAge: null, indexed: true });
   updateAnnualHint();
