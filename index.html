@@ -236,6 +236,64 @@
     accent-color: var(--accent);
   }
   .income input:disabled { opacity: 0.35; }
+  .amount-cell { display: flex; gap: 6px; align-items: center; }
+  .amount-cell input { flex: 1; }
+  .btn-calc {
+    flex: none;
+    height: 36px;
+    padding: 0 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--accent);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-calc:hover { border-color: var(--accent); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1 1 200px; }
+
+  /* 勞保年金試算彈窗 */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: rgba(2, 6, 23, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    width: min(600px, 100%);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .modal-head h3 { margin: 0; font-size: 18px; color: var(--accent); }
+  .pension-result {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 4px 0 14px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .pension-result .big { font-size: 24px; font-weight: 700; display: block; margin-bottom: 4px; }
+  .pension-result .muted { color: var(--muted); font-size: 12px; }
+  .pension-result .warn { color: #fcd34d; }
+  .pension-result .bad { color: #fca5a5; }
+  .pension-result .pick { color: #86efac; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions .btn { margin-top: 0; flex: 1; }
+  .modal-actions .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   @media (max-width: 640px) {
     .holding-head, .income-head { display: none; }
@@ -493,7 +551,10 @@
         <span></span>
       </div>
       <div id="incomes"></div>
-      <button type="button" class="btn btn-ghost" id="addIncome">＋ 再加一筆收入</button>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="addIncome">＋ 再加一筆收入</button>
+        <button type="button" class="btn btn-ghost" id="addLaborPension">＋ 勞保年金試算並新增</button>
+      </div>
 
       <button type="button" class="btn btn-primary" id="calcBtn">開始計算</button>
     </div>
@@ -518,6 +579,44 @@
         <thead></thead>
         <tbody></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- 勞保老年年金試算彈窗 -->
+<div class="modal-backdrop" id="pensionModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pensionTitle">
+    <div class="modal-head">
+      <h3 id="pensionTitle">勞保老年年金試算</h3>
+      <button type="button" class="btn-del" id="pensionClose" title="關閉" style="width:34px;">✕</button>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>出生年（西元）</label>
+        <input type="number" id="lpBirth" min="1900" max="2100" />
+        <div class="hint" id="lpLegalHint"></div>
+      </div>
+      <div class="field">
+        <label>平均月投保薪資 (NT$)<button type="button" class="info" data-tip="勞保局用你加保期間「最高 60 個月」的投保薪資平均。不確定的話，長期薪水在 45,800 以上的人直接套最高級距就對了。可到勞保局 e 化服務系統查自己的投保紀錄。">i</button></label>
+        <input type="number" id="lpSalary" min="0" step="100" />
+        <div class="hint">不確定就套 <button type="button" class="chip" id="lpSalaryMax"></button></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>投保年資（年）<button type="button" class="info" data-tip="到退休為止累計的勞保年資，含 2009 年以前的舊年資，未滿一年的部分按比例計算，沒有上限；要滿 15 年才能按月領年金。可到勞保局 e 化服務系統查目前累計年資，再加上到退休前預計還會工作的年數。">i</button></label>
+        <input type="number" id="lpYears" min="0" step="0.5" />
+      </div>
+      <div class="field">
+        <label>幾歲開始領<button type="button" class="info" data-tip="法定年齡領全額（1957 年以前出生 60 歲，之後每晚一年出生加 1 歲，1962 年以後出生 65 歲）。最多可以提前 5 年開始領，每提前 1 年少 4%（最多少 20%），而且是一輩子都少；最多可以延後 5 年，每延後 1 年多 4%（最多多 20%）。這裡按整年計算，實際會按月份比例。">i</button></label>
+        <input type="number" id="lpClaimAge" min="50" max="80" />
+        <div class="hint" id="lpAdjHint"></div>
+      </div>
+    </div>
+    <div class="pension-result" id="lpResult"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="pensionCancel">取消</button>
+      <button type="button" class="btn btn-primary" id="pensionApply">帶入收入列</button>
     </div>
   </div>
 </div>
@@ -776,7 +875,7 @@
     row.className = "income";
     row.innerHTML = `
       <div class="field"><label>名稱</label><input type="text" class="inc-name" placeholder="例：勞保年金" value="${esc(inc.name)}" /></div>
-      <div class="field"><label>金額 (NT$)</label><input type="number" class="inc-amount" min="0" value="${inc.amount}" /></div>
+      <div class="field"><label>金額 (NT$)</label><div class="amount-cell"><input type="number" class="inc-amount" min="0" value="${inc.amount}" /><button type="button" class="btn-calc inc-calc" title="用勞保年金試算填入這一列">算</button></div></div>
       <div class="field"><label>怎麼領</label>
         <select class="inc-type">
           ${[["monthly", "每月領"], ["yearly", "每年領"], ["once", "一次領"]]
@@ -793,11 +892,140 @@
     typeEl.addEventListener("change", syncType);
     syncType();
     row.querySelector(".btn-del").addEventListener("click", () => row.remove());
+    row.querySelector(".inc-calc").addEventListener("click", () => openPension(row));
     incomesEl.appendChild(row);
+    return row;
   }
   document.getElementById("addIncome").addEventListener("click", () =>
     addIncomeRow({ name: "", amount: 0, freq: "monthly", fromAge: 65, toAge: null, indexed: false })
   );
+  document.getElementById("addLaborPension").addEventListener("click", () => openPension(null));
+
+  // ----- 勞保老年年金試算 -----
+  // 法規數字（2026-09-22 查證，勞工保險條例第 58、58-1、58-2、65-4 條，law.moj.gov.tw pcode=N0050001；
+  // 分級表上下限見 bli.gov.tw/0005475.html；法規調整時只需改這裡）
+  const LABOR = {
+    rateA: 0.00775, plusA: 3000, // 公式一：平均月投保薪資 × 年資 × 0.775% ＋ 3,000（第 58-1 條）
+    rateB: 0.0155,               // 公式二：平均月投保薪資 × 年資 × 1.55%（兩式擇優）
+    minYears: 15,                // 年資滿 15 年才能領年金，未滿只能領一次金（第 58 條）
+    salaryMax: 45800,            // 投保薪資分級表最高級距（2016-05-01 起）
+    salaryMin: 29500,            // 分級表第 1 級＝基本工資（2026-01-01 起）
+    adjPerYear: 0.04, adjMaxYears: 5, // 提前／延後每年 ±4%，最多 5 年、±20%（第 58-2 條）
+    // 法定請領年齡：1957（民國 46）年以前出生 60 歲，之後每晚一年出生加 1 歲，1962（民國 51）年以後 65 歲（第 58 條）
+    legalAge: (birthYear) => (birthYear <= 1957 ? 60 : birthYear >= 1962 ? 65 : 60 + (birthYear - 1957)),
+  };
+  // 純計算：回傳兩個公式、取高、增減給後的每月金額
+  function laborPension({ birthYear, salary, years, claimAge }) {
+    const legal = LABOR.legalAge(birthYear);
+    const s = Math.min(salary, LABOR.salaryMax);
+    const a = s * years * LABOR.rateA + LABOR.plusA;
+    const b = s * years * LABOR.rateB;
+    const base = Math.max(a, b);
+    const diffYears = claimAge - legal;
+    const clamped = Math.max(-LABOR.adjMaxYears, Math.min(LABOR.adjMaxYears, diffYears));
+    const factor = 1 + clamped * LABOR.adjPerYear;
+    return {
+      legal, salaryUsed: s, a, b, base, diffYears, factor, monthly: base * factor,
+      tooEarly: diffYears < -LABOR.adjMaxYears,
+      tooFewYears: years < LABOR.minYears,
+    };
+  }
+
+  const pensionModal = document.getElementById("pensionModal");
+  const lp = (id) => document.getElementById(id);
+  let pensionTarget = null;   // 要回填的收入列；null＝帶入時新增一列
+  let pensionResult = null;   // 目前顯示的試算結果
+  let claimTouched = false;   // 使用者有沒有自己改過「幾歲開始領」
+  lp("lpSalaryMax").textContent = `最高級距 ${LABOR.salaryMax.toLocaleString()}`;
+
+  function openPension(row) {
+    pensionTarget = row;
+    claimTouched = false;
+    const curAge = parseFloat(lp("currentAge").value);
+    if (lp("lpBirth").value === "" && isFinite(curAge)) lp("lpBirth").value = new Date().getFullYear() - Math.round(curAge);
+    if (lp("lpSalary").value === "") lp("lpSalary").value = LABOR.salaryMax;
+    if (lp("lpYears").value === "") lp("lpYears").value = 35;
+    renderPension();
+    pensionModal.hidden = false;
+    lp("lpSalary").focus();
+  }
+  function closePension() { pensionModal.hidden = true; pensionTarget = null; }
+
+  function renderPension() {
+    const birthYear = parseFloat(lp("lpBirth").value);
+    const salary = parseFloat(lp("lpSalary").value);
+    const years = parseFloat(lp("lpYears").value);
+    const legal = isFinite(birthYear) ? LABOR.legalAge(birthYear) : null;
+    lp("lpLegalHint").textContent = legal !== null ? `你的法定請領年齡是 ${legal} 歲` : "填出生年才知道法定請領年齡";
+    if (legal !== null && !claimTouched) lp("lpClaimAge").value = legal;
+    const claimAge = parseFloat(lp("lpClaimAge").value);
+    const out = lp("lpResult");
+    const missing = [];
+    if (!isFinite(birthYear)) missing.push("出生年");
+    if (!isFinite(salary) || salary <= 0) missing.push("平均月投保薪資");
+    if (!isFinite(years) || years <= 0) missing.push("投保年資");
+    if (!isFinite(claimAge)) missing.push("幾歲開始領");
+    if (missing.length) {
+      pensionResult = null;
+      lp("pensionApply").disabled = true;
+      lp("lpAdjHint").textContent = "";
+      out.innerHTML = `<span class="muted">請填「${missing.join("」「")}」</span>`;
+      return;
+    }
+    const r = laborPension({ birthYear, salary, years, claimAge });
+    if (r.tooFewYears) {
+      pensionResult = null;
+      lp("pensionApply").disabled = true;
+      lp("lpAdjHint").textContent = "";
+      out.innerHTML = `<span class="big bad">年資未滿 ${LABOR.minYears} 年，不能領年金</span><div>勞保年資滿 ${LABOR.minYears} 年才能按月領老年年金，未滿只能領一次金。如果到退休前還會繼續工作，年資要填「到退休時累計」的年數。</div>`;
+      return;
+    }
+    const adj = r.tooEarly
+      ? `<span class="bad">最多只能提前 ${LABOR.adjMaxYears} 年，最早 ${r.legal - LABOR.adjMaxYears} 歲才能開始領</span>`
+      : r.diffYears < 0
+        ? `<span class="warn">提前 ${-r.diffYears} 年請領，一輩子都少 ${Math.round((1 - r.factor) * 100)}%</span>`
+        : r.diffYears > 0
+          ? `<span class="pick">延後 ${Math.min(r.diffYears, LABOR.adjMaxYears)} 年請領，多 ${Math.round((r.factor - 1) * 100)}%${r.diffYears > LABOR.adjMaxYears ? "（最多算 " + LABOR.adjMaxYears + " 年）" : ""}</span>`
+          : `法定年齡請領，領全額`;
+    lp("lpAdjHint").innerHTML = adj;
+    pensionResult = r.tooEarly ? null : { ...r, claimAge };
+    lp("pensionApply").disabled = !pensionResult;
+    const fmtN = (n) => Math.round(n).toLocaleString();
+    out.innerHTML = r.tooEarly
+      ? `<span class="big bad">不能在 ${claimAge} 歲開始領</span>${adj}`
+      : `
+      <span class="big">每月約 ${fmtN(r.monthly)} 元</span>
+      <div>公式一：${fmtN(r.salaryUsed)} × ${years} 年 × ${(LABOR.rateA * 100).toFixed(3)}% ＋ ${fmtN(LABOR.plusA)} ＝ ${fmtN(r.a)} 元${r.a >= r.b ? ' <span class="pick">← 取高</span>' : ""}</div>
+      <div>公式二：${fmtN(r.salaryUsed)} × ${years} 年 × ${(LABOR.rateB * 100).toFixed(2)}% ＝ ${fmtN(r.b)} 元${r.b > r.a ? ' <span class="pick">← 取高</span>' : ""}</div>
+      ${r.factor !== 1 ? `<div>${fmtN(r.base)} × ${Math.round(r.factor * 100)}% ＝ ${fmtN(r.monthly)} 元</div>` : ""}
+      ${salary > LABOR.salaryMax ? `<div class="warn">投保薪資最高只到 ${fmtN(LABOR.salaryMax)}，已用上限計算</div>` : ""}
+      ${salary < LABOR.salaryMin ? `<div class="warn">一般全職勞工的投保薪資最低是 ${fmtN(LABOR.salaryMin)}（基本工資），確認一下是不是填錯了</div>` : ""}
+      <div class="muted">這是現在的物價；勞保年金會隨物價指數累計漲 5% 調整，帶入時會自動勾「隨通膨」。</div>
+    `;
+  }
+  function applyPension() {
+    if (!pensionResult) return;
+    let row = pensionTarget;
+    if (!row || !row.isConnected) row = addIncomeRow({ name: "勞保年金", amount: 0, freq: "monthly", fromAge: 65, toAge: null, indexed: true });
+    const nameEl = row.querySelector(".inc-name");
+    if (!nameEl.value.trim()) nameEl.value = "勞保年金";
+    row.querySelector(".inc-amount").value = Math.round(pensionResult.monthly);
+    const typeEl = row.querySelector(".inc-type");
+    typeEl.value = "monthly";
+    typeEl.dispatchEvent(new Event("change"));
+    row.querySelector(".inc-from").value = pensionResult.claimAge;
+    row.querySelector(".inc-to").value = "";
+    row.querySelector(".inc-indexed").checked = true;
+    closePension();
+  }
+  ["lpBirth", "lpSalary", "lpYears"].forEach((id) => lp(id).addEventListener("input", renderPension));
+  lp("lpClaimAge").addEventListener("input", () => { claimTouched = true; renderPension(); });
+  lp("lpSalaryMax").addEventListener("click", () => { lp("lpSalary").value = LABOR.salaryMax; renderPension(); });
+  lp("pensionClose").addEventListener("click", closePension);
+  lp("pensionCancel").addEventListener("click", closePension);
+  lp("pensionApply").addEventListener("click", applyPension);
+  pensionModal.addEventListener("click", (e) => { if (e.target === pensionModal) closePension(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !pensionModal.hidden) closePension(); });
 
   const monthlyExpenseEl = document.getElementById("monthlyExpense");
   function updateAnnualHint() {
