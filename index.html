@@ -255,25 +255,25 @@
   .btn-row .btn { flex: 1 1 200px; }
 
   /* 勞保年金試算彈窗 */
+  /* 遮罩層本身可捲動、彈窗不限高：滾輪放在哪裡都是捲彈窗；開著時頁面鎖住不動 */
   .modal-backdrop {
     position: fixed;
     inset: 0;
     z-index: 500;
     background: rgba(2, 6, 23, 0.72);
     display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow-y: auto;
     padding: 16px;
   }
   .modal-backdrop[hidden] { display: none; }
+  body.modal-open { overflow: hidden; }
   .modal {
+    margin: auto; /* 比視窗矮時置中，比視窗高時從頂端開始、跟著遮罩層捲 */
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 20px 22px;
     width: min(600px, 100%);
-    max-height: calc(100vh - 32px);
-    overflow: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
   .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
@@ -291,6 +291,22 @@
   .pension-result .warn { color: #fcd34d; }
   .pension-result .bad { color: #fca5a5; }
   .pension-result .pick { color: #86efac; }
+  .tabs { display: flex; gap: 4px; margin: -4px 0 14px; border-bottom: 1px solid var(--border); }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    color: var(--muted);
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab-pane[hidden] { display: none; }
   .modal-actions { display: flex; gap: 10px; }
   .modal-actions .btn { margin-top: 0; flex: 1; }
   .modal-actions .btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -553,7 +569,7 @@
       <div id="incomes"></div>
       <div class="btn-row">
         <button type="button" class="btn btn-ghost" id="addIncome">＋ 再加一筆收入</button>
-        <button type="button" class="btn btn-ghost" id="addLaborPension">＋ 勞保年金試算並新增</button>
+        <button type="button" class="btn btn-ghost" id="addLaborPension">＋ 試算勞保／勞退並新增</button>
       </div>
 
       <button type="button" class="btn btn-primary" id="calcBtn">開始計算</button>
@@ -587,9 +603,14 @@
 <div class="modal-backdrop" id="pensionModal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pensionTitle">
     <div class="modal-head">
-      <h3 id="pensionTitle">勞保老年年金試算</h3>
+      <h3 id="pensionTitle">退休年金試算</h3>
       <button type="button" class="btn-del" id="pensionClose" title="關閉" style="width:34px;">✕</button>
     </div>
+    <div class="tabs" role="tablist">
+      <span class="tab active" data-tab="labor" role="tab" tabindex="0">勞保老年年金<button type="button" class="info" data-tip="勞工保險的老年給付。只要有加勞保、年資滿 15 年，退休後由勞保局按月發到過世為止（終身），金額看投保薪資和年資，而且會跟著物價指數調整。這是大多數上班族退休後最主要的一筆固定收入。">i</button></span>
+      <span class="tab" data-tab="fund" role="tab" tabindex="0">勞退新制月退<button type="button" class="info" data-tip="2005 年上路的勞工退休金新制：雇主每個月把你薪資的 6% 存進「你個人」的專戶，由政府代操，你也可以自己加提。退休後把專戶累積的錢按平均餘命分期領。跟勞保是兩筆不同的錢、可以同時領；差別是不隨物價調整、領完就沒了。">i</button></span>
+    </div>
+    <div class="tab-pane" id="tabLabor">
     <div class="row">
       <div class="field">
         <label>出生年（西元）</label>
@@ -614,6 +635,55 @@
       </div>
     </div>
     <div class="pension-result" id="lpResult"></div>
+    </div>
+
+    <div class="tab-pane" id="tabFund" hidden>
+    <div class="row">
+      <div class="field">
+        <label>目前專戶餘額 (NT$)<button type="button" class="info" data-tip="勞退新制個人專戶目前累積的本金＋收益。可到勞保局 e 化服務系統、勞動保障卡或郵局查詢；剛開始工作填 0。">i</button></label>
+        <input type="number" id="npBalance" min="0" step="10000" />
+      </div>
+      <div class="field">
+        <label>目前月薪 (NT$)<button type="button" class="info" data-tip="雇主每月按「月提繳工資」的 6% 提繳進你的專戶，提繳工資依分級表、有上限。填目前的月薪就好，超過上限會自動用上限算。">i</button></label>
+        <input type="number" id="npSalary" min="0" step="1000" />
+        <div class="hint" id="npSalaryHint"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>自提 (%)<button type="button" class="info" data-tip="除了雇主的 6%，你可以自願再提 0～6%，這部分從當年薪資所得扣除、不用繳所得稅。沒有自提填 0。">i</button></label>
+        <input type="number" id="npSelf" min="0" max="6" step="1" />
+      </div>
+      <div class="field">
+        <label>工作到幾歲<button type="button" class="info" data-tip="雇主提繳到你離職／退休為止。預設帶「想幾歲退休」。">i</button></label>
+        <input type="number" id="npWorkUntil" min="18" max="80" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>專戶年報酬 (%)<button type="button" class="info" data-tip="勞退基金由政府操作，收益保證不低於銀行二年定存利率（目前約 1.7%），不足由國庫補；基金近 10 年實際年化約 12%，但未來不保證。這裡填你預期的長期年化報酬，保守可抓 3～5%。">i</button></label>
+        <input type="number" id="npReturn" step="0.1" />
+        <div class="hint" id="npReturnHint"></div>
+      </div>
+      <div class="field">
+        <label>薪資年成長 (%)<button type="button" class="info" data-tip="每年加薪幅度，影響之後每月提繳的金額。不確定填通膨率（2%）或 0。">i</button></label>
+        <input type="number" id="npGrowth" step="0.1" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>幾歲開始領<button type="button" class="info" data-tip="年滿 60 歲才能請領（60 歲前只有喪失工作能力才能提前）；提繳年資滿 15 年可選按月領，未滿只能一次領。可以晚一點再領，專戶會繼續累積收益，但沒有像勞保那樣的延後加成。">i</button></label>
+        <input type="number" id="npClaimAge" min="60" max="90" />
+        <div class="hint" id="npClaimHint"></div>
+      </div>
+      <div class="field">
+        <label>勞退年資（年）<button type="button" class="info" data-tip="勞退新制的提繳年資（2005 年 7 月新制上路後的年資）。到請領時累計滿 15 年才能選月退；未滿只能一次領。">i</button></label>
+        <input type="number" id="npYears" min="0" step="0.5" />
+      </div>
+    </div>
+    <div class="pension-result" id="npResult"></div>
+    </div>
+
     <div class="modal-actions">
       <button type="button" class="btn btn-ghost" id="pensionCancel">取消</button>
       <button type="button" class="btn btn-primary" id="pensionApply">帶入收入列</button>
@@ -935,21 +1005,154 @@
   const lp = (id) => document.getElementById(id);
   let pensionTarget = null;   // 要回填的收入列；null＝帶入時新增一列
   let pensionResult = null;   // 目前顯示的試算結果
-  let claimTouched = false;   // 使用者有沒有自己改過「幾歲開始領」
+  let claimTouched = false;   // 勞保分頁：使用者有沒有自己改過「幾歲開始領」
+  let fundClaimTouched = false; // 勞退分頁同上
   lp("lpSalaryMax").textContent = `最高級距 ${LABOR.salaryMax.toLocaleString()}`;
+
+  let currentTab = "labor";   // labor＝勞保老年年金；fund＝勞退新制月退
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll("#pensionModal .tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+    lp("tabLabor").hidden = tab !== "labor";
+    lp("tabFund").hidden = tab !== "fund";
+    if (tab === "labor") renderPension(); else renderFund();
+  }
+  document.querySelectorAll("#pensionModal .tab").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
   function openPension(row) {
     pensionTarget = row;
     claimTouched = false;
+    fundClaimTouched = false;
     const curAge = parseFloat(lp("currentAge").value);
+    const retireAge = parseFloat(lp("retirementAge").value);
+    // 勞保分頁預設值（只在空白時帶，讓上次填的值留著）
     if (lp("lpBirth").value === "" && isFinite(curAge)) lp("lpBirth").value = new Date().getFullYear() - Math.round(curAge);
     if (lp("lpSalary").value === "") lp("lpSalary").value = LABOR.salaryMax;
     if (lp("lpYears").value === "") lp("lpYears").value = 35;
-    renderPension();
+    // 勞退分頁預設值
+    if (lp("npBalance").value === "") lp("npBalance").value = 0;
+    if (lp("npSalary").value === "") lp("npSalary").value = 50000;
+    if (lp("npSelf").value === "") lp("npSelf").value = 0;
+    if (lp("npWorkUntil").value === "" && isFinite(retireAge)) lp("npWorkUntil").value = Math.round(retireAge);
+    if (lp("npReturn").value === "") lp("npReturn").value = FUND.defaultReturn * 100;
+    if (lp("npGrowth").value === "") lp("npGrowth").value = 0;
+    if (lp("npYears").value === "" && isFinite(curAge) && isFinite(retireAge)) lp("npYears").value = Math.max(0, Math.round(retireAge) - Math.round(curAge));
+    // 名稱含「勞退」的列直接開勞退分頁
+    const name = row ? row.querySelector(".inc-name").value : "";
+    switchTab(/勞退/.test(name) ? "fund" : "labor");
     pensionModal.hidden = false;
-    lp("lpSalary").focus();
+    pensionModal.scrollTop = 0;
+    document.body.classList.add("modal-open");
   }
-  function closePension() { pensionModal.hidden = true; pensionTarget = null; }
+  function closePension() {
+    pensionModal.hidden = true;
+    pensionTarget = null;
+    document.body.classList.remove("modal-open");
+  }
+
+  // ----- 勞退新制月退休金 -----
+  // 法規與參數（2026-09-22 查證：勞工退休金條例第 14、23、24、25 條 law.moj.gov.tw pcode=N0030020；
+  // 月退計算方式 bli.gov.tw/0018437.html、0104047.html；保證收益率與基金績效 blf.gov.tw）
+  const FUND = {
+    employerRate: 0.06,     // 雇主提繳不得低於工資 6%（第 14 條）
+    selfMax: 0.06,          // 勞工自願提繳最高 6%，全數不計入當年薪資所得
+    wageMax: 150000,        // 月提繳工資分級表上限（2026-01-01 起）
+    minClaimAge: 60,        // 年滿 60 歲才能請領（第 24 條）
+    minYears: 15,           // 提繳年資滿 15 年才能選月退，未滿只能一次領
+    defaultReturn: 0.03,    // 專戶預期年報酬預設值（保證下限 1.7108%，基金近 10 年平均約 12%，取保守）
+    returnHint: "保證下限約 1.7%（二年定存利率），基金近 10 年平均約 12%；長期保守抓 3～5%",
+    annuityRate: 0.011473,  // 勞保局現行月退換算利率＝新制基金前 3 年平均保證收益率，至少每 3 年檢討
+    // 平均餘命：內政部 111 年簡易生命表（全體）60 歲 23.47 年，勞保局採整數；其他年齡以每歲約減 0.78 年線性近似
+    lifeYears: (age) => Math.max(1, Math.round(23.47 - 0.78 * (age - 60))),
+  };
+  // 純計算：從現在累積到請領年齡，再依勞保局的年金現值因子換算成每月定額
+  // F ＝ 12 × [1 − (1+i)^−n] / i × (1+i)^(1/12)，n＝平均餘命（年）、i＝annuityRate；月退＝專戶餘額 ÷ F
+  function fundPension({ currentAge, balance, salary, selfRate, workUntil, r, g, claimAge, years }) {
+    const wageCap = (w) => Math.min(w, FUND.wageMax);
+    const rm = Math.pow(1 + r, 1 / 12) - 1;
+    let bal = balance;
+    let wage = wageCap(salary);
+    const rate = FUND.employerRate + Math.min(Math.max(selfRate, 0), FUND.selfMax);
+    let contributed = 0;
+    for (let age = currentAge; age < claimAge; age++) {
+      const working = age < workUntil;
+      for (let m = 0; m < 12; m++) {
+        bal = bal * (1 + rm) + (working ? wage * rate : 0);
+        if (working) contributed += wage * rate;
+      }
+      if (working) wage = wageCap(wage * (1 + g));
+    }
+    const lifeYears = FUND.lifeYears(claimAge);
+    const i = FUND.annuityRate;
+    const factor = i > 0
+      ? (12 * (1 - Math.pow(1 + i, -lifeYears)) / i) * Math.pow(1 + i, 1 / 12)
+      : 12 * lifeYears;
+    const monthly = bal / factor;
+    return {
+      balanceAtClaim: bal, contributed, monthly, lifeYears, factor,
+      endAge: claimAge + lifeYears,               // 領到幾歲（平均餘命屆滿）
+      tooYoung: claimAge < FUND.minClaimAge,
+      tooFewYears: years < FUND.minYears,
+      wageCapped: salary > FUND.wageMax,
+    };
+  }
+  let fundResult = null;
+  function renderFund() {
+    const curAge = parseFloat(lp("currentAge").value);
+    const balance = parseFloat(lp("npBalance").value);
+    const salary = parseFloat(lp("npSalary").value);
+    const selfPct = parseFloat(lp("npSelf").value);
+    const workUntil = parseFloat(lp("npWorkUntil").value);
+    const rPct = parseFloat(lp("npReturn").value);
+    const gPct = parseFloat(lp("npGrowth").value);
+    const years = parseFloat(lp("npYears").value);
+    lp("npSalaryHint").textContent = `提繳工資上限 ${FUND.wageMax.toLocaleString()}`;
+    lp("npReturnHint").textContent = FUND.returnHint || "";
+    // 幾歲開始領：預設 max(60, 工作到幾歲)，使用者改過就不覆蓋
+    if (!fundClaimTouched && isFinite(workUntil)) lp("npClaimAge").value = Math.max(FUND.minClaimAge, Math.round(workUntil));
+    const claimAge = parseFloat(lp("npClaimAge").value);
+    lp("npClaimHint").textContent = `最早 ${FUND.minClaimAge} 歲`;
+    const out = lp("npResult");
+    const fmtN = (n) => Math.round(n).toLocaleString();
+    const missing = [];
+    if (!isFinite(curAge)) missing.push("目前年齡（主畫面）");
+    if (!isFinite(balance) || balance < 0) missing.push("目前專戶餘額");
+    if (!isFinite(salary) || salary < 0) missing.push("目前月薪");
+    if (!isFinite(selfPct) || selfPct < 0) missing.push("自提");
+    if (!isFinite(workUntil)) missing.push("工作到幾歲");
+    if (!isFinite(rPct)) missing.push("專戶年報酬");
+    if (!isFinite(gPct)) missing.push("薪資年成長");
+    if (!isFinite(claimAge)) missing.push("幾歲開始領");
+    if (!isFinite(years) || years < 0) missing.push("勞退年資");
+    if (missing.length) {
+      fundResult = null;
+      lp("pensionApply").disabled = true;
+      out.innerHTML = `<span class="muted">請填「${missing.join("」「")}」</span>`;
+      return;
+    }
+    const r = fundPension({ currentAge: Math.round(curAge), balance, salary, selfRate: selfPct / 100, workUntil: Math.round(workUntil), r: rPct / 100, g: gPct / 100, claimAge: Math.round(claimAge), years });
+    if (r.tooYoung || r.tooFewYears) {
+      fundResult = null;
+      lp("pensionApply").disabled = true;
+      out.innerHTML = r.tooYoung
+        ? `<span class="big bad">要滿 ${FUND.minClaimAge} 歲才能領</span>`
+        : `<span class="big bad">勞退年資未滿 ${FUND.minYears} 年，只能一次領</span><div>提繳年資滿 ${FUND.minYears} 年才能選按月領；未滿的話會一次領出專戶餘額約 ${fmtN(r.balanceAtClaim)} 元，可以改用「一次領」的收入或把它加進資產。</div>`;
+      return;
+    }
+    fundResult = { ...r, claimAge: Math.round(claimAge) };
+    lp("pensionApply").disabled = false;
+    out.innerHTML = `
+      <span class="big">每月約 ${fmtN(r.monthly)} 元，領到 ${Math.round(r.endAge)} 歲</span>
+      <div>${Math.round(claimAge)} 歲時專戶約 ${fmtN(r.balanceAtClaim)} 元（之後提繳 ${fmtN(r.contributed)} 元＋收益）</div>
+      <div>÷ 年金現值因子 ${r.factor.toFixed(1)}（${Math.round(claimAge)} 歲平均餘命 ${r.lifeYears} 年、勞保局換算利率 ${(FUND.annuityRate * 100).toFixed(4)}%）＝ 每月 ${fmtN(r.monthly)} 元</div>
+      ${selfPct > FUND.selfMax * 100 ? `<div class="warn">自提最多 ${FUND.selfMax * 100}%，已用上限計算</div>` : ""}
+      ${r.wageCapped ? `<div class="warn">提繳工資最高 ${fmtN(FUND.wageMax)}，已用上限計算</div>` : ""}
+      ${workUntil > claimAge ? `<div class="warn">「工作到幾歲」晚於請領年齡，${Math.round(claimAge)} 歲之後的提繳沒有算進去</div>` : ""}
+      <div class="muted">月退不隨物價調整，只領到平均餘命為止（活得更久就沒有了），帶入時「隨通膨」不勾、「到幾歲」填 ${Math.round(r.endAge) - 1}。實際金額勞保局每年會依專戶收益重算，這裡當固定；${Math.round(claimAge) !== 60 ? "60 歲以外的平均餘命是近似值；" : ""}正式數字以勞保局試算為準。</div>
+    `;
+  }
+  ["npBalance", "npSalary", "npSelf", "npWorkUntil", "npReturn", "npGrowth", "npYears"].forEach((id) => lp(id).addEventListener("input", renderFund));
+  lp("npClaimAge").addEventListener("input", () => { fundClaimTouched = true; renderFund(); });
 
   function renderPension() {
     const birthYear = parseFloat(lp("lpBirth").value);
@@ -1004,18 +1207,23 @@
     `;
   }
   function applyPension() {
-    if (!pensionResult) return;
+    // 勞保：終身、隨通膨；勞退月退：定額、領到平均餘命為止
+    const fill = currentTab === "labor"
+      ? (pensionResult && { name: "勞保年金", amount: pensionResult.monthly, fromAge: pensionResult.claimAge, toAge: null, indexed: true })
+      : (fundResult && { name: "勞退月退", amount: fundResult.monthly, fromAge: fundResult.claimAge, toAge: Math.round(fundResult.endAge) - 1, indexed: false });
+    if (!fill) return;
     let row = pensionTarget;
-    if (!row || !row.isConnected) row = addIncomeRow({ name: "勞保年金", amount: 0, freq: "monthly", fromAge: 65, toAge: null, indexed: true });
+    if (!row || !row.isConnected) row = addIncomeRow({ name: fill.name, amount: 0, freq: "monthly", fromAge: fill.fromAge, toAge: null, indexed: fill.indexed });
     const nameEl = row.querySelector(".inc-name");
-    if (!nameEl.value.trim()) nameEl.value = "勞保年金";
-    row.querySelector(".inc-amount").value = Math.round(pensionResult.monthly);
+    // 空白或仍是自動命名的才覆蓋，使用者自己取的名字不動
+    if (!nameEl.value.trim() || ["勞保年金", "勞退月退"].includes(nameEl.value.trim())) nameEl.value = fill.name;
+    row.querySelector(".inc-amount").value = Math.round(fill.amount);
     const typeEl = row.querySelector(".inc-type");
     typeEl.value = "monthly";
     typeEl.dispatchEvent(new Event("change"));
-    row.querySelector(".inc-from").value = pensionResult.claimAge;
-    row.querySelector(".inc-to").value = "";
-    row.querySelector(".inc-indexed").checked = true;
+    row.querySelector(".inc-from").value = fill.fromAge;
+    row.querySelector(".inc-to").value = fill.toAge ?? "";
+    row.querySelector(".inc-indexed").checked = fill.indexed;
     closePension();
   }
   ["lpBirth", "lpSalary", "lpYears"].forEach((id) => lp(id).addEventListener("input", renderPension));
