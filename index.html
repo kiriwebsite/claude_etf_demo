@@ -253,6 +253,27 @@
     white-space: nowrap;
   }
   .btn-calc:hover { border-color: var(--accent); }
+  .save-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .btn-link {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--muted);
+    font-size: 12px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .btn-link:hover { color: #fca5a5; }
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .btn-row .btn { flex: 1 1 200px; }
 
@@ -504,7 +525,7 @@
 
   <div class="grid">
     <!-- Inputs -->
-    <div class="card">
+    <div class="card" id="inputCard">
       <h2>輸入資料</h2>
 
       <div class="row">
@@ -575,6 +596,10 @@
       </div>
 
       <button type="button" class="btn btn-primary" id="calcBtn">開始計算</button>
+      <div class="save-bar">
+        <span id="saveNote"></span>
+        <button type="button" class="btn-link" id="resetBtn">清空重來</button>
+      </div>
     </div>
 
     <!-- Results -->
@@ -1517,13 +1542,123 @@
     })
   );
 
-  // 預設資料並先算一次
-  [
-    { name: "定存", rate: 3, amount: 300000, monthly: 5000, sellCost: 0, taxMode: "none", gainTax: 0 },
-    { name: "0050 ETF", rate: 7, amount: 500000, monthly: 20000, sellCost: 0, taxMode: "none", gainTax: 0 },
-  ].forEach(addHoldingRow);
-  addIncomeRow({ name: "勞保年金", amount: 20000, freq: "monthly", fromAge: 65, toAge: null, indexed: true });
-  updateAnnualHint();
+  // ----- 存檔：資料留在這台瀏覽器（localStorage），換裝置或清快取就沒了 -----
+  const SAVE_KEY = "retire-calc:v1";
+  const MAIN_IDS = ["currentAge", "retirementAge", "deathAge", "inflationRate", "monthlyExpense"];
+  const MODAL_IDS = ["lpBirth", "lpSalary", "lpYears", "lpClaimAge",
+                     "npBalance", "npSalary", "npSelf", "npWorkUntil", "npReturn", "npGrowth", "npClaimAge", "npYears"];
+  const DEFAULT_STATE = {
+    main: { currentAge: 30, retirementAge: 60, deathAge: 85, inflationRate: 2, monthlyExpense: 50000 },
+    holdings: [
+      { name: "定存", rate: 3, amount: 300000, monthly: 5000, sellCost: 0, taxMode: "none", gainTax: 0 },
+      { name: "0050 ETF", rate: 7, amount: 500000, monthly: 20000, sellCost: 0, taxMode: "none", gainTax: 0 },
+    ],
+    incomes: [{ name: "勞保年金", amount: 20000, freq: "monthly", fromAge: 65, toAge: null, indexed: true }],
+    modal: {},
+  };
+
+  function collectState() {
+    const main = {};
+    MAIN_IDS.forEach((id) => (main[id] = lp(id).value));
+    const modal = {};
+    MODAL_IDS.forEach((id) => (modal[id] = lp(id).value));
+    return {
+      main, modal,
+      holdings: [...document.querySelectorAll("#holdings .holding")].map((r) => ({
+        name: r.querySelector(".h-name").value,
+        rate: r.querySelector(".h-rate").value,
+        amount: r.querySelector(".h-amount").value,
+        monthly: r.querySelector(".h-monthly").value,
+        sellCost: r.querySelector(".h-sell").value,
+        taxMode: r.querySelector(".h-taxmode").value,
+        gainTax: r.querySelector(".h-tax").value,
+      })),
+      incomes: [...document.querySelectorAll("#incomes .income")].map((r) => ({
+        name: r.querySelector(".inc-name").value,
+        amount: r.querySelector(".inc-amount").value,
+        freq: r.querySelector(".inc-type").value,
+        fromAge: r.querySelector(".inc-from").value,
+        toAge: r.querySelector(".inc-to").value,
+        indexed: r.querySelector(".inc-indexed").checked,
+      })),
+    };
+  }
+
+  // 讀進來的值可能來自舊版或被改過，每個欄位都給退路
+  function applyState(st) {
+    const d = DEFAULT_STATE;
+    MAIN_IDS.forEach((id) => (lp(id).value = st?.main?.[id] ?? d.main[id]));
+    MODAL_IDS.forEach((id) => (lp(id).value = st?.modal?.[id] ?? ""));
+    holdingsEl.innerHTML = "";
+    const hs = Array.isArray(st?.holdings) && st.holdings.length ? st.holdings : d.holdings;
+    hs.forEach((h) => addHoldingRow({
+      name: h.name ?? "", rate: h.rate ?? 0, amount: h.amount ?? 0, monthly: h.monthly ?? 0,
+      sellCost: h.sellCost ?? 0, taxMode: h.taxMode ?? "none", gainTax: h.gainTax ?? 0,
+    }));
+    incomesEl.innerHTML = "";
+    const incs = Array.isArray(st?.incomes) ? st.incomes : d.incomes;
+    incs.forEach((i) => addIncomeRow({
+      name: i.name ?? "", amount: i.amount ?? 0, freq: i.freq ?? "monthly",
+      fromAge: i.fromAge ?? 65, toAge: i.toAge === "" ? null : i.toAge ?? null, indexed: !!i.indexed,
+    }));
+    updateAnnualHint();
+  }
+
+  let storageOK = true;
+  const saveNote = lp("saveNote");
+  let noteTimer = null;
+  function setNote(text, flash) {
+    saveNote.textContent = text;
+    clearTimeout(noteTimer);
+    if (flash) noteTimer = setTimeout(() => (saveNote.textContent = "資料會自動存在這台瀏覽器"), 1500);
+  }
+  let saveTimer = null;
+  function scheduleSave() {
+    if (!storageOK) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(collectState()));
+        setNote("已儲存 ✓", true);
+      } catch (e) {
+        storageOK = false;
+        setNote("這個瀏覽器不能儲存資料（無痕模式或已停用），關掉頁面就會不見");
+      }
+    }, 400);
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      storageOK = false;
+      return null;
+    }
+  }
+  function resetAll() {
+    if (!confirm("確定要清空所有資料、回到一開始的範例嗎？這個動作沒辦法復原。")) return;
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 不能寫也不影響重置 */ }
+    applyState(DEFAULT_STATE);
+    calculate();
+    setNote("已清空 ✓", true);
+  }
+  lp("resetBtn").addEventListener("click", resetAll);
+  // 輸入區與彈窗的任何改動都自動存。click 也要收：新增／刪除列、壽命 chip、
+  // 彈窗「帶入收入列」都是直接改 DOM，不會觸發 input 事件。
+  // 用捕獲階段：刪除鈕會把自己的列移出 DOM，冒泡時 closest() 就找不到 #inputCard 了
+  ["input", "change", "click"].forEach((ev) =>
+    document.addEventListener(ev, (e) => {
+      if (e.target.closest("#resetBtn")) return; // 清空自己會處理，別把預設值又存回去
+      if (e.target.closest("#inputCard, #pensionModal")) scheduleSave();
+    }, true)
+  );
+
+  // 啟動：有存檔就還原，沒有就用預設範例
+  const saved = loadState();
+  applyState(saved);
+  setNote(storageOK
+    ? (saved ? "已從這台瀏覽器載入上次的資料" : "資料會自動存在這台瀏覽器")
+    : "這個瀏覽器不能儲存資料（無痕模式或已停用），關掉頁面就會不見");
   calculate();
 </script>
 </body>
