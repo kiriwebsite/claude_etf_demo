@@ -54,32 +54,33 @@
   }
   [data-theme="dark"] {
     color-scheme: dark;
-    --bg: #101317;
-    --surface: #191E24;
-    --sunk: #13171C;
-    --ink: #ECEAE4;
-    --muted: #A3A9B1;
-    --line: #2A313A;
-    --line-strong: #3A434E;
-    --brand-bar: #91A7D0;
-    --brand: #91A7D0;
-    --brand-hover: #A9BCE0;
-    --on-brand: #101726;
-    --grad: #1C2438;
-    --grad-strong: #91A7D0;
-    --grad-strong-hover: #A9BCE0;
-    --accent: #A9BCE0;
-    --accent-line: #91A7D0;
-    --accent-soft: #1C2438;
-    --warm: #D6BFA5;
-    --warm-bar: #BFA588;
-    --warm-line: #C9AE92;
-    --warm-soft: #2C251E;
+    /* 暗色：色相跟亮色同一系，但彩度拉高，黑底上才不會發灰；卡片和背景的明暗也拉開 */
+    --bg: #0C0F14;
+    --surface: #1A2029;
+    --sunk: #12161C;
+    --ink: #F2F0EB;
+    --muted: #AFB6C0;
+    --line: #2F3744;
+    --line-strong: #46505F;
+    --brand-bar: #7F9BE6;
+    --brand: #8EA9F0;
+    --brand-hover: #A7BCF5;
+    --on-brand: #0C1428;
+    --grad: #1E2B48;
+    --grad-strong: #8EA9F0;
+    --grad-strong-hover: #A7BCF5;
+    --accent: #A3B9F2;
+    --accent-line: #8EA9F0;
+    --accent-soft: #1E2B48;
+    --warm: #EBC9A0;
+    --warm-bar: #D9AE7E;
+    --warm-line: #E0B88A;
+    --warm-soft: #4A3824;
     --bad: #FF8A7D;
-    --bad-soft: #3E1B19;
-    --on-bad: #191E24;
-    --dot-3: #8FA6F0;
-    --dot-4: #D08BCE;
+    --bad-soft: #46201D;
+    --on-bad: #1A2029;
+    --dot-3: #7CC4F5;
+    --dot-4: #D0A6F5;
     --shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
     --tip-bg: #ECEAE4;
     --tip-ink: #101317;
@@ -222,6 +223,8 @@
     justify-content: center;
     font: 700 18px var(--num);
   }
+  /* 暗色：淡藍底跟卡片太接近，改成實心主色底 */
+  [data-theme="dark"] .sec-num { background: var(--brand); color: var(--on-brand); }
   .sec-head .grow { flex: 1; min-width: 0; }
   .sec-head h2 { margin: 0; font-size: 21px; font-weight: 700; }
   .sec-head p { margin: 0; font-size: 14px; color: var(--muted); }
@@ -262,6 +265,64 @@
   .box.xl .pre { font-size: 18px; }
   .box.sm { height: 50px; padding: 0 14px; border-radius: 12px; background: var(--surface); }
   .box.sm input { font-size: 19px; }
+  /* 自製下拉選單：原生 select 藏起來負責存值，畫面上是 .dd */
+  select.dd-native { display: none; }
+  .dd { position: relative; flex: 1; min-width: 0; display: flex; }
+  .dd-btn {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    min-height: 36px;
+    padding: 0 4px 0 0;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 15px;
+    text-align: left;
+  }
+  .dd-btn .dd-val { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dd-btn .i { width: 16px; height: 16px; color: var(--muted); transition: transform 0.15s; }
+  .dd-btn[aria-expanded="true"] .i { transform: rotate(180deg); }
+  .dd-btn:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; border-radius: 8px; }
+  .dd-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: -12px;
+    z-index: 40;
+    min-width: calc(100% + 24px);
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  }
+  .dd-menu[hidden] { display: none; }
+  .dd.align-right .dd-menu { left: auto; right: -6px; }
+  .dd-opt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 42px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 15px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .dd-opt .i { width: 16px; height: 16px; color: var(--accent); visibility: hidden; }
+  .dd-opt[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .dd-opt[aria-selected="true"] .i { visibility: visible; }
+  .dd-opt.active { background: var(--sunk); }
+  .dd-opt[aria-selected="true"].active { background: var(--accent-soft); }
+  /* 收入金額旁的「怎麼領」：小膠囊樣式 */
+  .dd.freq { flex: none; margin-right: -8px; }
+  .dd.freq .dd-btn { height: 38px; padding: 0 8px 0 12px; border-radius: 10px; background: var(--sunk); font-size: 14px; }
   .box select.freq { flex: none; width: auto; height: 38px; margin-right: -8px; padding: 0 8px; border-radius: 10px; background: var(--sunk); font-size: 14px; }
   input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
@@ -279,16 +340,30 @@
   .chip:hover { border-color: var(--accent); }
 
   /* 人生時間軸：存錢期／退休期的長度比例 */
-  .lifeline { display: flex; gap: 6px; margin-top: 22px; padding: 16px 20px; border-radius: 16px; background: var(--sunk); }
+  /* 人生時間軸：三排格線（標籤／長條／刻度），某段標籤換行時兩段長條也還在同一排、接在一起。
+     欄寬比例由 JS 依年數設定，每欄有最小寬度，短期間的標籤才放得下 */
+  .lifeline {
+    --ll-min-save: 96px;
+    --ll-min-retire: 128px;
+    display: grid;
+    grid-template-columns: minmax(var(--ll-min-save), 30fr) minmax(var(--ll-min-retire), 25fr);
+    column-gap: 6px;
+    row-gap: 8px;
+    align-items: end;
+    margin-top: 22px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: var(--sunk);
+  }
   .lifeline[hidden] { display: none; }
-  .seg { flex-basis: 0; min-width: 96px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
-  .seg .bar { height: 12px; }
-  .seg-save .bar { background: var(--brand-bar); border-radius: 999px 4px 4px 999px; }
-  .seg-retire .bar { background: var(--warm-bar); border-radius: 4px 999px 999px 4px; }
-  .seg-save .yrs { color: var(--accent); }
-  .seg-retire .yrs { color: var(--warm); }
-  .seg .yrs { font: 700 15px var(--num); }
-  .seg .ticks { display: flex; justify-content: space-between; gap: 8px; font: 13px var(--num); color: var(--muted); white-space: nowrap; }
+  .ll-label { font-size: 14px; white-space: nowrap; }
+  .lifeline .bar { height: 12px; }
+  .bar.seg-save { background: var(--brand-bar); border-radius: 999px 4px 4px 999px; }
+  .bar.seg-retire { background: var(--warm-bar); border-radius: 4px 999px 999px 4px; }
+  .ll-label.seg-save .yrs { color: var(--accent); }
+  .ll-label.seg-retire .yrs { color: var(--warm); }
+  .ll-label .yrs { font: 700 15px var(--num); }
+  .lifeline .ticks { display: flex; justify-content: space-between; gap: 8px; font: 13px var(--num); color: var(--muted); white-space: nowrap; }
 
   /* 退休生活 */
   .expense-row { display: flex; gap: 18px; align-items: stretch; }
@@ -451,6 +526,8 @@
   }
   .btn-add:hover { border-color: var(--accent); background: var(--accent-soft); }
   .callout { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; padding: 18px 20px; border-radius: 18px; background: var(--warm-soft); }
+  /* 暗色：淡棕底在深色卡片上不夠明顯，加一圈棕色邊框 */
+  [data-theme="dark"] .callout { border: 1px solid color-mix(in srgb, var(--warm-bar) 45%, transparent); }
   .callout-icon { width: 46px; height: 46px; flex: none; border-radius: 14px; background: var(--surface); color: var(--warm); display: flex; align-items: center; justify-content: center; }
   .callout-icon .i { width: 22px; height: 22px; }
   .callout-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -557,7 +634,7 @@
 
   .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
   @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
-  @media (max-width: 360px) { .stats { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .stats { grid-template-columns: 1fr; } }
   .stat {
     min-width: 0;
     overflow-wrap: anywhere;
@@ -782,6 +859,12 @@
   .rb-text small { font-size: 12px; opacity: 0.7; }
   .rb-text b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .rb-go { flex: none; display: flex; align-items: center; gap: 2px; height: 44px; padding: 0 10px 0 14px; border-radius: 14px; background: color-mix(in srgb, var(--bg) 14%, transparent); font-size: 14px; font-weight: 700; }
+  @media (max-width: 420px) {
+    .rb-go .rb-go-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .rb-go { padding: 0 10px; }
+    .rb-text b { font-size: 14px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+    .result-bar { height: auto; min-height: 64px; padding-top: 8px; padding-bottom: 8px; }
+  }
 
   /* 回到頂端：捲下去才出現；窄螢幕上結果列是全寬的，出現時往上墊一格 */
   .to-top {
@@ -805,7 +888,7 @@
   .to-top.hide { opacity: 0; transform: translateY(12px); pointer-events: none; }
   @media (max-width: 760px) {
     .to-top { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); }
-    body.bar-on .to-top { bottom: calc(92px + env(safe-area-inset-bottom)); }
+    body.bar-on .to-top { bottom: calc(100px + env(safe-area-inset-bottom)); }
   }
 
   @media (max-width: 1100px) { .privacy { display: none; } }
@@ -840,7 +923,8 @@
     .ages .box .u { font-size: 14px; }
     .ages .life-hint { grid-column: 1 / -1; margin-top: 0; }
     .lifeline { padding: 14px 16px; }
-    .seg { min-width: 72px; font-size: 13px; }
+    .lifeline { --ll-min-save: 88px; --ll-min-retire: 118px; }
+    .ll-label { font-size: 13px; }
     .expense-row { flex-direction: column; gap: 12px; }
     .box.xl { height: 64px; padding: 0 18px; }
     .box.xl input { font-size: 30px; }
@@ -934,16 +1018,12 @@
           </div>
         </div>
         <div class="lifeline" id="lifeline" aria-label="人生時間軸">
-          <div class="seg seg-save" id="segSave">
-            <span><b>存錢期</b> <span class="yrs" id="yrsSave">30</span> 年</span>
-            <div class="bar"></div>
-            <div class="ticks"><span id="tkNow">30 歲・現在</span></div>
-          </div>
-          <div class="seg seg-retire" id="segRetire">
-            <span><b>退休期</b> <span class="yrs" id="yrsRetire">25</span> 年</span>
-            <div class="bar"></div>
-            <div class="ticks"><span id="tkRetire">60 歲退休</span><span id="tkEnd">85 歲</span></div>
-          </div>
+          <span class="ll-label seg-save"><b>存錢期</b> <span class="yrs" id="yrsSave">30</span> 年</span>
+          <span class="ll-label seg-retire"><b>退休期</b> <span class="yrs" id="yrsRetire">25</span> 年</span>
+          <div class="bar seg-save"></div>
+          <div class="bar seg-retire"></div>
+          <div class="ticks"><span id="tkNow">30 歲・現在</span></div>
+          <div class="ticks"><span id="tkRetire">60 歲退休</span><span id="tkEnd">85 歲</span></div>
         </div>
       </section>
 
@@ -1048,7 +1128,7 @@
 <button type="button" class="result-bar hide" id="resultBar">
   <span class="rb-icon" id="rbIcon"></span>
   <span class="rb-text"><small id="rbSmall"></small><b id="rbMain"></b></span>
-  <span class="rb-go">看結果<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+  <span class="rb-go"><span class="rb-go-text">看結果</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
 </button>
 <button type="button" class="to-top hide" id="toTop" aria-label="回到頂端" title="回到頂端"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
 
@@ -1402,6 +1482,94 @@
   const TIP_TAX = "不課稅：台股 ETF、台股個股（證所稅停徵）、多數保單。固定稅率：每次賣出的獲利都按固定比例課，適合海外券商所在國會預扣的情況。海外所得：台灣的最低稅負制，海外 ETF／美股適用——一年內賣出的獲利合計不到 100 萬就完全不課；達到 100 萬才整筆計入基本所得額，超過 750 萬免稅額的部分課 20%（2024 年起的法規數字，會跟著通膨調整；假設退休後沒有其他要計入的所得）。";
   let rowSeq = 0; // 讓每一列的 label 能用 for 對到自己的欄位
 
+  // ----- 自製下拉選單 -----
+  // 原生 select 留在頁面上（藏起來）負責存值，讀值、存檔、試算帶入都照舊；
+  // 選了之後把值寫回 select 並觸發 change，程式改了 select 的值也會同步回按鈕文字
+  let openDropdown = null;
+  function enhanceSelect(sel, { variant = "", alignRight = false } = {}) {
+    const dd = document.createElement("div");
+    dd.className = `dd ${variant}${alignRight ? " align-right" : ""}`;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "dd-btn";
+    btn.setAttribute("aria-haspopup", "listbox");
+    btn.setAttribute("aria-expanded", "false");
+    if (sel.id) {
+      btn.id = sel.id + "-btn";
+      // 這一列可能還沒放進頁面，從同一個欄位裡找 label
+      const lab = (sel.closest(".field") || document).querySelector(`label[for="${sel.id}"]`);
+      if (lab) lab.htmlFor = btn.id;
+    }
+    if (sel.getAttribute("aria-label")) btn.setAttribute("aria-label", sel.getAttribute("aria-label"));
+    btn.innerHTML = `<span class="dd-val"></span>${svgIcon("M6 9l6 6 6-6")}`;
+    const menu = document.createElement("ul");
+    menu.className = "dd-menu";
+    menu.setAttribute("role", "listbox");
+    menu.hidden = true;
+    menu.innerHTML = [...sel.options].map((o, k) =>
+      `<li class="dd-opt" role="option" data-k="${k}" aria-selected="false"><span>${esc(o.text)}</span>${ICON.check}</li>`
+    ).join("");
+    dd.append(btn, menu);
+    sel.after(dd);
+    const opts = [...menu.children];
+    let active = -1;
+    const sync = () => {
+      btn.querySelector(".dd-val").textContent = sel.options[sel.selectedIndex]?.text ?? "";
+      opts.forEach((li, k) => li.setAttribute("aria-selected", String(k === sel.selectedIndex)));
+    };
+    const setActive = (k) => {
+      active = (k + opts.length) % opts.length;
+      opts.forEach((li, i) => li.classList.toggle("active", i === active));
+    };
+    const close = (focusBtn) => {
+      menu.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+      if (openDropdown === close) openDropdown = null;
+      if (focusBtn) btn.focus();
+    };
+    const open = () => {
+      if (openDropdown) openDropdown(false);
+      menu.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
+      setActive(sel.selectedIndex);
+      openDropdown = close;
+    };
+    const choose = (k) => {
+      if (sel.selectedIndex !== k) {
+        sel.selectedIndex = k;
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      sync();
+      close(true);
+    };
+    btn.addEventListener("click", () => (menu.hidden ? open() : close(false)));
+    btn.addEventListener("keydown", (e) => {
+      if (menu.hidden) {
+        if (["ArrowDown", "ArrowUp"].includes(e.key)) { e.preventDefault(); open(); }
+        return;
+      }
+      if (e.key === "ArrowDown") { e.preventDefault(); setActive(active + 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setActive(active - 1); }
+      else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(active); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); }
+      else if (e.key === "Tab") close(false);
+    });
+    menu.addEventListener("click", (e) => {
+      const li = e.target.closest(".dd-opt");
+      if (li) choose(+li.dataset.k);
+    });
+    menu.addEventListener("mousemove", (e) => {
+      const li = e.target.closest(".dd-opt");
+      if (li) setActive(+li.dataset.k);
+    });
+    sel.addEventListener("change", sync); // 程式改值（例如試算帶入）時同步按鈕文字
+    sync();
+  }
+  // 點選單以外的地方就收起來
+  document.addEventListener("click", (e) => {
+    if (openDropdown && !e.target.closest(".dd")) openDropdown(false);
+  });
+
   // ----- 資產項目 UI -----
   const holdingsEl = document.getElementById("holdings");
   function addHoldingRow(h) {
@@ -1424,7 +1592,7 @@
         <div class="item-grid g3 adv-body">
           <div class="field s"><label for="hs${uid}">賣出成本<button type="button" class="info" data-tip="${TIP_SELL}">i</button></label><div class="box sm"><input type="number" id="hs${uid}" class="h-sell" min="0" step="0.01" inputmode="decimal" value="${h.sellCost ?? 0}" /><span class="u">%</span></div></div>
           <div class="field s wide-sm"><label for="ht${uid}">獲利怎麼課稅<button type="button" class="info" data-tip="${TIP_TAX}">i</button></label><div class="box sm">
-            <select id="ht${uid}" class="h-taxmode">
+            <select id="ht${uid}" class="h-taxmode dd-native">
               ${[["none", "不課稅"], ["fixed", "固定稅率"], ["overseas", "海外所得"]]
                 .map(([v, label]) => `<option value="${v}"${(h.taxMode ?? "none") === v ? " selected" : ""}>${label}</option>`).join("")}
             </select></div></div>
@@ -1433,6 +1601,7 @@
       </details>
     `;
     const modeEl = row.querySelector(".h-taxmode");
+    enhanceSelect(modeEl);
     const taxEl = row.querySelector(".h-tax");
     const sellEl = row.querySelector(".h-sell");
     const sumEl = row.querySelector(".adv-sum");
@@ -1468,7 +1637,7 @@
       </div>
       <div class="item-grid g4">
         <div class="field s span2"><label for="ia${uid}">金額</label><div class="box sm"><span class="pre">NT$</span><input type="number" id="ia${uid}" class="inc-amount" min="0" step="1000" inputmode="numeric" value="${inc.amount}" />
-          <select class="inc-type freq" aria-label="怎麼領">
+          <select class="inc-type freq dd-native" aria-label="怎麼領">
             ${[["monthly", "每月領"], ["yearly", "每年領"], ["once", "一次領"]]
               .map(([v, label]) => `<option value="${v}"${inc.freq === v ? " selected" : ""}>${label}</option>`).join("")}
           </select></div></div>
@@ -1480,6 +1649,7 @@
         <button type="button" class="info" data-tip="勾選＝你填的是現在的物價，之後每年會跟著通膨調高（勞保年金、勞退月退適用）。不勾＝固定金額，幾十年後還是領一樣多（多數年金險、固定租金適用）。">i</button></label>
     `;
     const typeEl = row.querySelector(".inc-type");
+    enhanceSelect(typeEl, { variant: "freq", alignRight: true });
     const toEl = row.querySelector(".inc-to");
     const syncType = () => { toEl.disabled = typeEl.value === "once"; };
     typeEl.addEventListener("change", syncType);
@@ -1788,8 +1958,8 @@
     const ok = [cur, ret, end].every(isFinite) && cur < ret && ret < end;
     lp("lifeline").hidden = !ok;
     if (ok) {
-      lp("segSave").style.flexGrow = ret - cur;
-      lp("segRetire").style.flexGrow = end - ret;
+      lp("lifeline").style.gridTemplateColumns =
+        `minmax(var(--ll-min-save), ${ret - cur}fr) minmax(var(--ll-min-retire), ${end - ret}fr)`;
       lp("yrsSave").textContent = ret - cur;
       lp("yrsRetire").textContent = end - ret;
       lp("tkNow").textContent = `${cur} 歲・現在`;
@@ -1894,10 +2064,10 @@
         <td data-label="年齡">${row.age}</td>
         <td data-label="階段">${phase}</td>
         <td data-label="年初有多少">${wan(row.start)}</td>
-        <td data-label="這一年存入 / 領出" class="${row.flow >= 0 ? 'pos' : 'neg'}">${row.flow >= 0 ? '+' : ''}${wan(row.flow)}</td>
+        <td data-label="這一年存入 / 領出" class="${row.flow >= 0 ? 'pos' : 'neg'}"><span>${row.flow >= 0 ? '+' : ''}${wan(row.flow)}</span></td>
         ${hasIncome ? `<td data-label="其他收入">${row.income > 0 ? wan(row.income) : "—"}</td>` : ""}
-        ${hasOverseas ? `<td data-label="海外所得" class="${row.overseasTax > 0 ? "neg" : row.overseasCounted ? "caution" : ""}">${row.overseasIncome > 0 ? wan(row.overseasIncome) + (row.overseasTax > 0 ? `<br><span class="small-note neg">稅 ${wanText(row.overseasTax)}</span>` : "") : "—"}</td>` : ""}
-        ${hasCosts ? `<td data-label="手續費＋稅" class="neg">${row.costs > 0 ? "-" + wan(row.costs) : "—"}</td>` : ""}
+        ${hasOverseas ? `<td data-label="海外所得" class="${row.overseasTax > 0 ? "neg" : row.overseasCounted ? "caution" : ""}"><span>${row.overseasIncome > 0 ? wan(row.overseasIncome) + (row.overseasTax > 0 ? `<br><span class="small-note neg">稅 ${wanText(row.overseasTax)}</span>` : "") : "—"}</span></td>` : ""}
+        ${hasCosts ? `<td data-label="手續費＋稅" class="neg"><span>${row.costs > 0 ? "-" + wan(row.costs) : "—"}</span></td>` : ""}
         <td data-label="年末有多少">${wan(row.end)}</td>
         <td data-label="換算成今天的物價">${wan(row.real)}</td>
         ${row.bal.map((b, k) => `<td data-label="${names[k]}">${wan(b)}</td>`).join("")}
